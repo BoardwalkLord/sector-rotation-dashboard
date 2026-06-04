@@ -106,6 +106,12 @@
     background:rgba(245,158,11,0.07);border:0.5px solid rgba(245,158,11,0.2);
     border-radius:6px;font-size:10px;line-height:1.5;color:rgba(245,158,11,0.85);
   }
+  .etf-legend{display:flex;flex-direction:column;gap:2px;}
+  .etf-row{display:grid;grid-template-columns:38px 108px 1fr;align-items:baseline;gap:8px;padding:4px 7px;border-radius:4px;background:rgba(255,255,255,0.03);}
+  .etf-row:hover{background:rgba(255,255,255,0.06);}
+  .etf-ticker{font-family:var(--mono);font-size:10px;font-weight:500;}
+  .etf-name{font-size:11px;color:var(--text1);font-weight:500;}
+  .etf-desc{font-size:10px;color:var(--text3);line-height:1.4;}
 
   /* MACRO */
   .macro-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);}
@@ -406,17 +412,17 @@
 
 <script>
 const SECTORS=[
-  {ticker:'XLK',name:'Technology',perf:null,flow:null,rsi:null,color:'#3b82f6',breadth:null},
-  {ticker:'XLE',name:'Energy',perf:null,flow:null,rsi:null,color:'#f59e0b',breadth:null},
-  {ticker:'XLF',name:'Financials',perf:null,flow:null,rsi:null,color:'#22c55e',breadth:null},
-  {ticker:'XLV',name:'Healthcare',perf:null,flow:null,rsi:null,color:'#14b8a6',breadth:null},
-  {ticker:'XLI',name:'Industrials',perf:null,flow:null,rsi:null,color:'#6366f1',breadth:null},
-  {ticker:'XLP',name:'Cons. Staples',perf:null,flow:null,rsi:null,color:'#ec4899',breadth:null},
-  {ticker:'XLY',name:'Cons. Disc.',perf:null,flow:null,rsi:null,color:'#f97316',breadth:null},
-  {ticker:'XLU',name:'Utilities',perf:null,flow:null,rsi:null,color:'#8b5cf6',breadth:null},
-  {ticker:'XLRE',name:'Real Estate',perf:null,flow:null,rsi:null,color:'#10b981',breadth:null},
-  {ticker:'XLB',name:'Materials',perf:null,flow:null,rsi:null,color:'#06b6d4',breadth:null},
-  {ticker:'XLC',name:'Comm. Svcs.',perf:null,flow:null,rsi:null,color:'#a78bfa',breadth:null},
+  {ticker:'XLK',name:'Technology',full:'Technology Select Sector SPDR',desc:'Apple, Microsoft, Nvidia, Meta — big tech & semiconductors',perf:null,flow:null,rsi:null,color:'#3b82f6',breadth:null},
+  {ticker:'XLE',name:'Energy',full:'Energy Select Sector SPDR',desc:'Exxon, Chevron, ConocoPhillips — oil, gas & energy services',perf:null,flow:null,rsi:null,color:'#f59e0b',breadth:null},
+  {ticker:'XLF',name:'Financials',full:'Financial Select Sector SPDR',desc:'JPMorgan, Berkshire, Goldman — banks, insurance & asset managers',perf:null,flow:null,rsi:null,color:'#22c55e',breadth:null},
+  {ticker:'XLV',name:'Healthcare',full:'Health Care Select Sector SPDR',desc:'UnitedHealth, Johnson & Johnson, Pfizer — pharma & hospitals',perf:null,flow:null,rsi:null,color:'#14b8a6',breadth:null},
+  {ticker:'XLI',name:'Industrials',full:'Industrial Select Sector SPDR',desc:'Caterpillar, Honeywell, GE — aerospace, defense & machinery',perf:null,flow:null,rsi:null,color:'#6366f1',breadth:null},
+  {ticker:'XLP',name:'Cons. Staples',full:'Consumer Staples Select Sector SPDR',desc:'Procter & Gamble, Coca-Cola, Walmart — everyday essentials',perf:null,flow:null,rsi:null,color:'#ec4899',breadth:null},
+  {ticker:'XLY',name:'Cons. Disc.',full:'Consumer Discretionary Select Sector SPDR',desc:'Amazon, Tesla, Home Depot — non-essential spending',perf:null,flow:null,rsi:null,color:'#f97316',breadth:null},
+  {ticker:'XLU',name:'Utilities',full:'Utilities Select Sector SPDR',desc:'NextEra, Duke Energy, Southern Co — electric, water & gas utilities',perf:null,flow:null,rsi:null,color:'#8b5cf6',breadth:null},
+  {ticker:'XLRE',name:'Real Estate',full:'Real Estate Select Sector SPDR',desc:'American Tower, Prologis, Equinix — REITs & property trusts',perf:null,flow:null,rsi:null,color:'#10b981',breadth:null},
+  {ticker:'XLB',name:'Materials',full:'Materials Select Sector SPDR',desc:'Linde, Air Products, Freeport — chemicals, metals & mining',perf:null,flow:null,rsi:null,color:'#06b6d4',breadth:null},
+  {ticker:'XLC',name:'Comm. Svcs.',full:'Communication Services Select Sector SPDR',desc:'Alphabet, Netflix, Disney, AT&T — media, telecom & social',perf:null,flow:null,rsi:null,color:'#a78bfa',breadth:null},
 ];
 
 const MACRO_DATA=[
@@ -459,6 +465,18 @@ const TICKER_DATA=[
 ];
 
 // ── TOOLTIP CONTENT ──────────────────────────────────────────────────────────
+function etfLegend(tickers){
+  const rows=tickers.map(t=>{
+    const s=SECTORS.find(x=>x.ticker===t);
+    if(!s)return'';
+    return`<div class="etf-row"><span class="etf-ticker" style="color:${s.color}">${s.ticker}</span><span class="etf-name">${s.name}</span><span class="etf-desc">${s.desc}</span></div>`;
+  }).join('');
+  return`<div class="tip-section"><div class="tip-section-label">ETF Legend — what these tickers mean</div><div class="etf-legend">${rows}</div></div>`;
+}
+function allEtfLegend(){
+  return etfLegend(SECTORS.map(s=>s.ticker));
+}
+
 const TIPS={
   heatmap:{
     title:'SECTOR HEATMAP GUIDE',
@@ -477,6 +495,7 @@ const TIPS={
         <div class="tip-section-label">Newbie tip</div>
         <div class="tip-section-text">Click any tile to load that sector's relative strength chart. Watch for a sector that's been red for 2–3 weeks suddenly turning flat or green — that's often the early signal of a rotation starting.</div>
       </div>
+      ${allEtfLegend()}
       <div class="tip-warning">⚠ One week of data is noisy. Confirm with the Rotation Signals table and RS Chart before acting.</div>
     `
   },
@@ -494,10 +513,16 @@ const TIPS={
         <div class="tip-rule blue"><div class="tip-rule-text"><strong>ISM Manufacturing:</strong> Above 50 = expansion = bullish for industrials & materials. Below 50 = contraction.</div></div>
         <div class="tip-rule blue"><div class="tip-rule-text"><strong>VIX (fear index):</strong> Below 20 = calm market, risk-on. Above 30 = fear, rotate to defensives. Above 40 = panic.</div></div>
         <div class="tip-rule blue"><div class="tip-rule-text"><strong>Credit Spreads:</strong> Tight (&lt;2%) = healthy economy. Widening fast = stress signal, exit cyclicals.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>DXY (US Dollar Index):</strong> Strong dollar hurts multinationals & commodities. Weak dollar boosts energy and materials.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>WTI Crude Oil:</strong> Rising oil = bullish for XLE (Energy). Sustained high oil also fuels inflation, which can hurt consumer sectors.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Which sectors each signal affects</div>
+        ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLU'])}
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Practical rule of thumb</div>
-        <div class="tip-section-text">When <strong>3+ indicators turn bullish simultaneously</strong>, the probability of a sustained rally in cyclical sectors (tech, energy, industrials) rises significantly. When 3+ turn bearish, shift to healthcare, utilities, and staples.</div>
+        <div class="tip-section-text">When <strong>3+ indicators turn bullish simultaneously</strong>, the probability of a sustained rally in cyclical sectors (XLK, XLE, XLI) rises significantly. When 3+ turn bearish, shift to defensive sectors (XLV, XLU, XLP).</div>
       </div>
       <div class="tip-warning">⚠ Macro data is published monthly or weekly — it lags real-time market moves by days to weeks.</div>
     `
@@ -510,16 +535,17 @@ const TIPS={
         <div class="tip-section-text">The economy moves in predictable phases. Each phase historically favors different sectors. The glowing dot shows where we currently are in the cycle.</div>
       </div>
       <div class="tip-section">
-        <div class="tip-section-label">The 5 phases</div>
-        <div class="tip-rule green"><div class="tip-rule-text"><strong>Recovery:</strong> After recession. Buy Financials, Tech. Earnings start recovering, rates low.</div></div>
-        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Early Expansion:</strong> Strong growth. Buy Consumer Discretionary, Materials. Jobs rising, spending up.</div></div>
-        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Mid Expansion (now):</strong> Peak growth. Buy Tech, Industrials. Corporate profits at highs.</div></div>
-        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Late Expansion:</strong> Growth slowing. Rotate to Energy, Materials. Inflation often rises here.</div></div>
-        <div class="tip-rule red"><div class="tip-rule-text"><strong>Recession:</strong> Buy Healthcare, Utilities, Consumer Staples. Defensive sectors hold value.</div></div>
+        <div class="tip-section-label">The 5 phases & best ETFs for each</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Recovery:</strong> Buy <em>XLF</em> (Financials), <em>XLK</em> (Tech). Earnings recovering, rates low.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Early Expansion:</strong> Buy <em>XLY</em> (Consumer Disc.), <em>XLB</em> (Materials). Jobs rising, spending up.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Mid Expansion (now):</strong> Buy <em>XLK</em> (Tech), <em>XLI</em> (Industrials). Corporate profits at highs.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Late Expansion:</strong> Rotate to <em>XLE</em> (Energy), <em>XLB</em> (Materials). Inflation often rises here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Recession:</strong> Buy <em>XLV</em> (Healthcare), <em>XLU</em> (Utilities), <em>XLP</em> (Staples). Defensive sectors hold value.</div></div>
       </div>
+      ${etfLegend(['XLF','XLK','XLY','XLB','XLI','XLE','XLV','XLU','XLP'])}
       <div class="tip-section">
         <div class="tip-section-label">How to use it</div>
-        <div class="tip-section-text">Match the current phase to the Rotation Signals table. If the model says "Mid Expansion," rotations into Tech and Industrials have historically succeeded <strong>65–70%</strong> of the time over a 6-month horizon.</div>
+        <div class="tip-section-text">Match the current phase to the Rotation Signals table. If the model says "Mid Expansion," rotations into XLK and XLI have historically succeeded <strong>65–70%</strong> of the time over a 6-month horizon.</div>
       </div>
       <div class="tip-warning">⚠ Cycle timing is an art, not a science. The model can be wrong by 3–6 months. Use it as context, not a precise timer.</div>
     `
@@ -537,9 +563,10 @@ const TIPS={
         <div class="tip-rule amber"><div class="tip-rule-text"><strong>Small positive flow with rising price:</strong> Healthy accumulation. Good entry timing.</div></div>
         <div class="tip-rule red"><div class="tip-rule-text"><strong>Large red bar:</strong> Institutions are selling. Don't fight the flow — this sector may underperform for weeks.</div></div>
       </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP'])}
       <div class="tip-section">
         <div class="tip-section-label">The key pattern to watch</div>
-        <div class="tip-section-text">When you see <strong>outflows from one sector and simultaneous inflows into another</strong> for 3+ consecutive days, that's a confirmed rotation. This is more reliable than price alone because price can be manipulated; actual fund flows cannot.</div>
+        <div class="tip-section-text">When you see <strong>outflows from one sector and simultaneous inflows into another</strong> for 3+ consecutive days, that's a confirmed rotation. Fund flows are more reliable than price alone because they show real money moving, not just sentiment.</div>
       </div>
       <div class="tip-warning">⚠ Short-term flows can be noisy. A single day of large inflow might be one fund rebalancing. Look for 3–5 day trends.</div>
     `
@@ -549,18 +576,19 @@ const TIPS={
     body:`
       <div class="tip-section">
         <div class="tip-section-label">What you're seeing</div>
-        <div class="tip-section-text">Forecasted capital movements from one sector to another, ranked by probability. Each row represents a thesis that money is about to leave the "From" sector and enter the "To" sector. <strong>Click any row</strong> for full analysis and stock picks.</div>
+        <div class="tip-section-text">Forecasted capital movements from one sector to another, ranked by probability. Each row means money is likely leaving the "From" sector and entering the "To" sector. <strong>Click any row</strong> for full analysis and stock picks.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Understanding probability</div>
-        <div class="tip-rule green"><div class="tip-rule-text"><strong>70%+:</strong> Strong signal. Multiple macro, flow, and technical indicators are aligned. Consider sizing up positions.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>70%+:</strong> Strong signal. Multiple macro, flow, and technical indicators aligned. Consider sizing up positions.</div></div>
         <div class="tip-rule amber"><div class="tip-rule-text"><strong>55–70%:</strong> Moderate signal. Good risk/reward but monitor for confirmation. Use smaller position sizes.</div></div>
         <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 55%:</strong> Speculative. Only for experienced traders with high risk tolerance. Don't bet the farm.</div></div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">How to act on this</div>
-        <div class="tip-section-text">Don't rotate your entire portfolio at once. A common approach: <strong>trim 25–30% of a "From" sector position</strong> when probability crosses 65%, then add to the "To" sector. Wait for the ETF of the destination sector to break above its 20-day moving average as confirmation.</div>
+        <div class="tip-section-text">Don't rotate your entire portfolio at once. A common approach: <strong>trim 25–30% of a "From" sector position</strong> when probability crosses 65%, then add to the "To" sector ETF. Wait for the ETF to break above its 20-day moving average as confirmation.</div>
       </div>
+      ${etfLegend(['XLK','XLE','XLF','XLY','XLI','XLU','XLV','XLB','XLC','XLP','XLRE'])}
       <div class="tip-section">
         <div class="tip-section-label">Expected upside note</div>
         <div class="tip-section-text">The % upside is a <strong>relative</strong> estimate — how much the destination sector is expected to outperform the S&P 500 over the forecast period, not an absolute price target.</div>
@@ -573,17 +601,18 @@ const TIPS={
     body:`
       <div class="tip-section">
         <div class="tip-section-label">What you're seeing</div>
-        <div class="tip-section-text">This chart shows how a sector is performing <strong>relative to the S&P 500</strong> — not in absolute terms. A line going up means the sector is outperforming the market, even if the market itself is falling.</div>
+        <div class="tip-section-text">This chart shows how a sector ETF is performing <strong>relative to the S&P 500</strong> — not in absolute terms. A line going up means the sector is outperforming the market, even if the market itself is falling.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Reading the chart</div>
-        <div class="tip-rule green"><div class="tip-rule-text"><strong>Line trending up & above zero:</strong> This sector is a leader. Money is rotating IN. Strong buy signal for sector plays.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Line trending up & above zero:</strong> This sector is a leader. Money is rotating IN. Strong buy signal.</div></div>
         <div class="tip-rule amber"><div class="tip-rule-text"><strong>Line crossing from negative to positive:</strong> Rotation just beginning. Often the best entry point — early but confirmed.</div></div>
         <div class="tip-rule red"><div class="tip-rule-text"><strong>Line trending down & below zero:</strong> This sector is a laggard. Avoid or short via inverse ETFs.</div></div>
       </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP'])}
       <div class="tip-section">
         <div class="tip-section-label">How to use the tabs</div>
-        <div class="tip-section-text">Click through the sector tabs to compare. Look for the sector where the RS line has been negative for 4–6 weeks then starts flattening — that's the classic <strong>"base and turn"</strong> pattern that often precedes a major rotation.</div>
+        <div class="tip-section-text">Click through the sector tabs above the chart to compare. Look for the sector where the RS line has been negative for 4–6 weeks then starts flattening — that's the classic <strong>"base and turn"</strong> pattern that often precedes a major rotation.</div>
       </div>
       <div class="tip-warning">⚠ RS charts are best used over 4–13 week windows. Daily noise can be misleading. Focus on the trend direction, not individual wiggles.</div>
     `
@@ -593,17 +622,18 @@ const TIPS={
     body:`
       <div class="tip-section">
         <div class="tip-section-label">What you're seeing</div>
-        <div class="tip-section-text">For each sector, the percentage of individual stocks that are trading <strong>above their own 50-day moving average</strong>. This tells you whether a sector's rally (or fall) is broad-based or driven by just a few big names.</div>
+        <div class="tip-section-text">For each sector ETF, the percentage of its individual member stocks that are trading <strong>above their own 50-day moving average</strong>. This tells you whether a rally (or sell-off) is broad-based or driven by just a few big names.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Reading the bars</div>
         <div class="tip-rule green"><div class="tip-rule-text"><strong>Above 60% (green):</strong> Healthy, broad rally. Most stocks in the sector are participating. High-quality signal.</div></div>
-        <div class="tip-rule blue"><div class="tip-rule-text"><strong>40–60% (blue):</strong> Mixed. Some stocks strong, some weak. Sector-level ETFs may be okay but stock-picking matters more here.</div></div>
-        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 40% (red):</strong> Weak breadth. Even if the sector ETF looks OK, most stocks are broken. Avoid sector exposure until breadth recovers.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>40–60% (blue):</strong> Mixed. ETF may be OK but stock-picking matters more here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 40% (red):</strong> Weak breadth. Avoid sector exposure until breadth recovers.</div></div>
       </div>
+      ${allEtfLegend()}
       <div class="tip-section">
         <div class="tip-section-label">The key insight</div>
-        <div class="tip-section-text">A sector ETF can be rising while breadth falls — this is called a <strong>"narrowing rally"</strong> and it almost always ends badly. If XLK is up 5% but only 35% of tech stocks are above their 50DMA, it's being driven by 2–3 mega-caps. That's fragile.</div>
+        <div class="tip-section-text">If XLK is up 5% but only 35% of tech stocks are above their 50DMA, it's being driven by 2–3 mega-caps (like Apple or Nvidia). That's a <strong>"narrowing rally"</strong> — fragile and often a warning sign.</div>
       </div>
       <div class="tip-warning">⚠ Breadth is a leading indicator of sustainability. Strong price + weak breadth = warning. Weak price + rising breadth = opportunity.</div>
     `
@@ -613,7 +643,7 @@ const TIPS={
     body:`
       <div class="tip-section">
         <div class="tip-section-label">What you're seeing</div>
-        <div class="tip-section-text">Individual stocks ranked by a composite score that weighs their position in a rotation-favored sector, relative valuation, momentum, and analyst estimates. Higher score = stronger alignment with current rotation thesis.</div>
+        <div class="tip-section-text">Individual stocks ranked by a composite score weighing their position in a rotation-favored sector, relative valuation, momentum, and analyst estimates. Higher score = stronger alignment with the current rotation thesis.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Understanding the score</div>
@@ -623,8 +653,9 @@ const TIPS={
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Practical advice for beginners</div>
-        <div class="tip-section-text">Rather than picking individual stocks, consider <strong>buying the sector ETF</strong> (e.g., XLE for energy) first. It's less risky than single stocks. Once comfortable, layer in the top-scored individual names for potentially higher returns.</div>
+        <div class="tip-section-text">Rather than picking individual stocks, start by <strong>buying the sector ETF</strong> instead. For example, if Energy (XLE) is the rotation target, buy XLE first — it instantly diversifies you across all energy companies and is much less risky than a single stock.</div>
       </div>
+      ${etfLegend(['XLE','XLF','XLI','XLB','XLK','XLY'])}
       <div class="tip-section">
         <div class="tip-section-label">Position sizing suggestion</div>
         <div class="tip-section-text">A common rule: never put more than <strong>5% of your portfolio</strong> in a single stock. For sector ETFs, 10–15% per sector is reasonable. Diversification across 3–4 rotation plays reduces your risk significantly.</div>
@@ -641,13 +672,14 @@ const TIPS={
       </div>
       <div class="tip-section">
         <div class="tip-section-label">The zones</div>
-        <div class="tip-rule red"><div class="tip-rule-text"><strong>RSI above 70 = Overbought:</strong> The sector has risen too fast. Not necessarily time to sell, but avoid chasing. Wait for RSI to cool below 60 before new entries.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>RSI above 70 = Overbought:</strong> The sector rose too fast. Avoid chasing — wait for RSI to cool below 60 before new entries.</div></div>
         <div class="tip-rule blue"><div class="tip-rule-text"><strong>RSI 45–65 = Healthy trend:</strong> Normal range during an uptrend. Good time to add to existing positions.</div></div>
-        <div class="tip-rule green"><div class="tip-rule-text"><strong>RSI below 30 = Oversold:</strong> Sector has been beaten down. Often a contrarian buy signal — especially powerful when combined with positive rotation thesis.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>RSI below 30 = Oversold:</strong> Sector beaten down. Often a contrarian buy signal — especially strong when a positive rotation thesis also exists.</div></div>
       </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLY','XLU'])}
       <div class="tip-section">
-        <div class="tip-section-label">The rotation play</div>
-        <div class="tip-section-text">The ideal rotation entry is: <strong>sector in Rotation table with high probability + RSI below 45</strong>. This means money is expected to flow IN, but the sector hasn't moved yet. That's where the best risk/reward lies.</div>
+        <div class="tip-section-label">The ideal rotation entry combo</div>
+        <div class="tip-section-text"><strong>High rotation probability in the table above + RSI below 45 on the destination sector ETF</strong> = money is expected to flow IN, but the sector hasn't moved yet. That's the best risk/reward setup.</div>
       </div>
       <div class="tip-warning">⚠ RSI alone is not a buy/sell signal. A sector can stay overbought for months in a strong bull market. Always combine with trend and flow confirmation.</div>
     `
@@ -657,21 +689,22 @@ const TIPS={
     body:`
       <div class="tip-section">
         <div class="tip-section-label">What you're seeing</div>
-        <div class="tip-section-text">The ratio of <strong>put options to call options</strong> traded on each sector ETF. Options are contracts that let traders bet on price direction — puts = betting on decline, calls = betting on rise. This ratio reveals where "smart money" is positioning.</div>
+        <div class="tip-section-text">The ratio of <strong>put options to call options</strong> traded on each sector ETF. Options let traders bet on price direction — puts = betting prices will fall, calls = betting prices will rise. This ratio reveals where institutional "smart money" is positioning.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Reading the bars</div>
-        <div class="tip-rule green"><div class="tip-rule-text"><strong>Below 1.0 (green):</strong> More calls than puts — traders are bullish on this sector. Institutions are buying upside exposure. Rotation-friendly signal.</div></div>
-        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Around 1.0 (neutral line):</strong> Balanced sentiment. No strong directional conviction from options market.</div></div>
-        <div class="tip-rule red"><div class="tip-rule-text"><strong>Above 1.0 (red):</strong> More puts than calls — traders are hedging or betting on decline. Could signal upcoming selling pressure or institutional protection of existing longs.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Below 1.0 (green):</strong> More calls than puts — traders are bullish. Institutions buying upside. Rotation-friendly signal.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Around 1.0 (neutral line):</strong> Balanced sentiment. No strong directional conviction from the options market.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Above 1.0 (red):</strong> More puts than calls — traders hedging or betting on decline. Possible selling pressure ahead.</div></div>
       </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLY'])}
       <div class="tip-section">
         <div class="tip-section-label">The contrarian angle</div>
-        <div class="tip-section-text">Extreme readings (above 1.4 or below 0.6) can be <strong>contrarian signals</strong>. When everyone is buying puts on a sector, the bad news is often already priced in — a surprise positive catalyst can trigger a violent short squeeze upward.</div>
+        <div class="tip-section-text">Extreme readings (above 1.4 or below 0.6) can be <strong>contrarian signals</strong>. When everyone is buying puts on a sector, the bad news is often already priced in — a surprise positive catalyst can trigger a sharp rebound.</div>
       </div>
       <div class="tip-section">
         <div class="tip-section-label">Best use case</div>
-        <div class="tip-section-text">Use this panel to <strong>confirm rotation signals</strong>: if the Rotation table says "buy Energy" and the put/call ratio on XLE is below 0.8, that's two independent signals aligned — much higher confidence.</div>
+        <div class="tip-section-text">Use this to <strong>confirm rotation signals</strong>: if the table says "buy XLE (Energy)" and XLE's put/call ratio is below 0.8, that's two independent signals aligned — much higher confidence.</div>
       </div>
       <div class="tip-warning">⚠ Options flow can be used for hedging (not just directional bets), so high put volume doesn't always mean bearishness. Context matters.</div>
     `
@@ -686,7 +719,7 @@ function showTip(key,btn){
   activeTipKey=key;
   const t=TIPS[key];
   document.getElementById('tipTitle').textContent=t.title;
-  document.getElementById('tipBody').innerHTML=t.body;
+  document.getElementById('tipBody').innerHTML=typeof t.body==='function'?t.body():t.body;
   popup.classList.add('visible');
   positionTip(btn,popup);
 }
