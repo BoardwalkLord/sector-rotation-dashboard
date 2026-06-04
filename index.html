@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sector Rotation Dashboard</title>
+<title>SectorPulse — Rotation Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -11,290 +11,214 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   :root {
-    --bg: #0a0c10;
-    --bg2: #10141c;
-    --bg3: #161b26;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text1: #e8ecf4;
-    --text2: #8892a4;
-    --text3: #4d5666;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-    --blue: #3b82f6;
-    --teal: #14b8a6;
-    --purple: #a78bfa;
-    --cyan: #22d3ee;
-    --accent: #3b82f6;
-    --mono: 'DM Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
-    --serif: 'Instrument Serif', serif;
+    --bg:#0a0c10;--bg2:#10141c;--bg3:#161b26;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text1:#e8ecf4;--text2:#8892a4;--text3:#4d5666;
+    --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;
+    --teal:#14b8a6;--purple:#a78bfa;--cyan:#22d3ee;
+    --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--serif:'Instrument Serif',serif;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text1); font-family: var(--sans); font-size: 13px; min-height: 100vh; overflow-x: hidden; }
-
-  /* grid scanline overlay */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px);
-    pointer-events: none; z-index: 0;
-  }
-
-  .dashboard { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 16px; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:13px;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0;}
+  .dashboard{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:16px;}
 
   /* HEADER */
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; margin-bottom: 16px;
-    background: var(--bg2); border: 0.5px solid var(--border2);
-    border-radius: 10px;
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;margin-bottom:16px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;}
+  .header-left{display:flex;align-items:center;gap:16px;}
+  .logo{font-family:var(--serif);font-size:22px;color:var(--text1);letter-spacing:-0.5px;}
+  .logo span{color:var(--blue);font-style:italic;}
+  .live-pill{display:flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:0.5px solid rgba(34,197,94,0.3);color:var(--green);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;}
+  .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .header-right{display:flex;align-items:center;gap:20px;}
+  .timestamp{font-family:var(--mono);font-size:11px;color:var(--text3);}
+  .cycle-badge{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);}
+
+  /* GRID */
+  .main-grid{display:grid;grid-template-columns:300px 1fr 300px;gap:12px;}
+  .panel{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--bg3);}
+  .panel-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;}
+  .panel-header-left{display:flex;align-items:center;gap:8px;}
+  .panel-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:20px;letter-spacing:0.05em;}
+  .badge-amber{background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);color:var(--amber);}
+  .badge-blue{background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);}
+  .badge-green{background:rgba(34,197,94,0.1);border:0.5px solid rgba(34,197,94,0.3);color:var(--green);}
+  .badge-red{background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);color:var(--red);}
+  .badge-purple{background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);}
+  .panel-body{padding:12px 14px;}
+
+  /* TOOLTIP BUTTON */
+  .tip-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:16px;height:16px;border-radius:50%;
+    background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);
+    color:var(--text3);font-size:9px;cursor:pointer;flex-shrink:0;
+    font-family:var(--mono);font-weight:500;
+    transition:background 0.15s,color 0.15s,border-color 0.15s;
+    position:relative;
   }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .logo { font-family: var(--serif); font-size: 22px; color: var(--text1); letter-spacing: -0.5px; }
-  .logo span { color: var(--blue); font-style: italic; }
-  .live-pill {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(34,197,94,0.1); border: 0.5px solid rgba(34,197,94,0.3);
-    color: var(--green); font-family: var(--mono); font-size: 10px;
-    padding: 3px 10px; border-radius: 20px; letter-spacing: 0.08em;
+  .tip-btn:hover{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4);color:var(--blue);}
+
+  /* TOOLTIP POPUP */
+  .tip-popup{
+    display:none;position:fixed;z-index:500;
+    width:300px;
+    background:#1a2035;border:0.5px solid rgba(59,130,246,0.3);
+    border-radius:10px;padding:0;overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
   }
-  .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-  .header-right { display: flex; align-items: center; gap: 20px; }
-  .timestamp { font-family: var(--mono); font-size: 11px; color: var(--text3); }
-  .cycle-badge {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
-    padding: 4px 12px; border-radius: 20px;
-    background: rgba(59,130,246,0.1); border: 0.5px solid rgba(59,130,246,0.3); color: var(--blue);
+  .tip-popup.visible{display:block;}
+  .tip-popup-header{
+    background:rgba(59,130,246,0.12);
+    border-bottom:0.5px solid rgba(59,130,246,0.2);
+    padding:10px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .tip-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--blue);}
+  .tip-popup-close{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;line-height:1;}
+  .tip-popup-close:hover{color:var(--text1);}
+  .tip-popup-body{padding:12px 14px;}
+  .tip-section{margin-bottom:10px;}
+  .tip-section:last-child{margin-bottom:0;}
+  .tip-section-label{
+    font-family:var(--mono);font-size:9px;letter-spacing:0.1em;
+    color:var(--text3);text-transform:uppercase;margin-bottom:5px;
+  }
+  .tip-section-text{font-size:11px;line-height:1.65;color:var(--text2);}
+  .tip-section-text strong{color:var(--text1);font-weight:500;}
+  .tip-rule{
+    display:flex;align-items:flex-start;gap:7px;
+    padding:5px 8px;margin-bottom:4px;
+    background:rgba(255,255,255,0.03);border-radius:5px;
+    border-left:2px solid;
+  }
+  .tip-rule-text{font-size:11px;line-height:1.5;color:var(--text2);}
+  .tip-rule-text strong{color:var(--text1);font-weight:500;}
+  .tip-rule.green{border-color:var(--green);}
+  .tip-rule.amber{border-color:var(--amber);}
+  .tip-rule.red{border-color:var(--red);}
+  .tip-rule.blue{border-color:var(--blue);}
+  .tip-rule.purple{border-color:var(--purple);}
+  .tip-warning{
+    margin-top:10px;padding:7px 10px;
+    background:rgba(245,158,11,0.07);border:0.5px solid rgba(245,158,11,0.2);
+    border-radius:6px;font-size:10px;line-height:1.5;color:rgba(245,158,11,0.85);
   }
 
-  /* MAIN GRID */
-  .main-grid {
-    display: grid;
-    grid-template-columns: 300px 1fr 300px;
-    grid-template-rows: auto auto auto;
-    gap: 12px;
-  }
+  /* MACRO */
+  .macro-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);}
+  .macro-row:last-child{border-bottom:none;}
+  .macro-label{color:var(--text2);font-size:12px;display:flex;align-items:center;gap:6px;}
+  .macro-label i{font-size:11px;opacity:0.6;}
+  .macro-val{font-family:var(--mono);font-size:12px;font-weight:500;}
+  .macro-signal{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:0.05em;}
+  .sig-bull{background:rgba(34,197,94,0.15);color:var(--green);}
+  .sig-bear{background:rgba(239,68,68,0.15);color:var(--red);}
+  .sig-neut{background:rgba(245,158,11,0.15);color:var(--amber);}
 
-  /* PANELS */
-  .panel {
-    background: var(--bg2); border: 0.5px solid var(--border);
-    border-radius: 10px; overflow: hidden;
-  }
-  .panel-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; border-bottom: 0.5px solid var(--border);
-    background: var(--bg3);
-  }
-  .panel-title {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-    color: var(--text2); text-transform: uppercase;
-  }
-  .panel-badge {
-    font-family: var(--mono); font-size: 9px; padding: 2px 7px;
-    border-radius: 20px; letter-spacing: 0.05em;
-  }
-  .badge-amber { background: rgba(245,158,11,0.1); border: 0.5px solid rgba(245,158,11,0.3); color: var(--amber); }
-  .badge-blue { background: rgba(59,130,246,0.1); border: 0.5px solid rgba(59,130,246,0.3); color: var(--blue); }
-  .badge-green { background: rgba(34,197,94,0.1); border: 0.5px solid rgba(34,197,94,0.3); color: var(--green); }
-  .badge-red { background: rgba(239,68,68,0.1); border: 0.5px solid rgba(239,68,68,0.3); color: var(--red); }
-  .badge-purple { background: rgba(167,139,250,0.1); border: 0.5px solid rgba(167,139,250,0.3); color: var(--purple); }
-  .panel-body { padding: 12px 14px; }
+  /* HEATMAP */
+  .sector-grid{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;padding:12px 14px;}
+  .sector-cell{border-radius:6px;padding:8px 6px;text-align:center;cursor:pointer;transition:transform 0.15s,border-color 0.15s;border:0.5px solid transparent;position:relative;overflow:hidden;}
+  .sector-cell:hover{transform:translateY(-2px);border-color:var(--border2);}
+  .sector-cell.selected{border-color:var(--blue)!important;}
+  .sector-name{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;margin-bottom:4px;}
+  .sector-ticker{font-family:var(--mono);font-size:10px;font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:4px;}
+  .sector-perf{font-family:var(--mono);font-size:13px;font-weight:600;}
+  .sector-flow{font-size:9px;margin-top:3px;opacity:0.7;font-family:var(--mono);}
 
-  /* MACRO INDICATORS */
-  .macro-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 7px 0; border-bottom: 0.5px solid var(--border);
-  }
-  .macro-row:last-child { border-bottom: none; }
-  .macro-label { color: var(--text2); font-size: 12px; display: flex; align-items: center; gap: 6px; }
-  .macro-label i { font-size: 11px; opacity: 0.6; }
-  .macro-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
-  .macro-signal {
-    font-family: var(--mono); font-size: 9px; padding: 2px 6px;
-    border-radius: 3px; letter-spacing: 0.05em;
-  }
-  .sig-bull { background: rgba(34,197,94,0.15); color: var(--green); }
-  .sig-bear { background: rgba(239,68,68,0.15); color: var(--red); }
-  .sig-neut { background: rgba(245,158,11,0.15); color: var(--amber); }
+  /* ROTATION TABLE */
+  .rotation-table{width:100%;border-collapse:collapse;}
+  .rotation-table th{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border2);}
+  .rotation-table td{padding:8px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;}
+  .rotation-table tr:last-child td{border-bottom:none;}
+  .rotation-table tr{transition:background 0.15s;cursor:pointer;}
+  .rotation-table tr:hover td{background:rgba(255,255,255,0.03);}
+  .from-to{display:flex;align-items:center;gap:5px;font-size:12px;}
+  .sector-tag{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;white-space:nowrap;}
+  .arrow-icon{color:var(--text3);font-size:10px;}
+  .prob-bar{position:relative;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:3px;width:60px;}
+  .prob-fill{height:100%;border-radius:2px;}
+  .prob-text{font-family:var(--mono);font-size:11px;font-weight:500;}
+  .upside-val{font-family:var(--mono);font-size:12px;color:var(--green);font-weight:500;}
+  .date-val{font-family:var(--mono);font-size:10px;color:var(--text2);}
 
-  /* SECTOR HEATMAP SPANS FULL WIDTH */
-  .span-full { grid-column: 1 / -1; }
-  .span-center { grid-column: 2; }
-  .span-left { grid-column: 1; }
-  .span-right { grid-column: 3; }
+  /* PICKS */
+  .pick-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);}
+  .pick-row:last-child{border-bottom:none;}
+  .pick-ticker{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text1);}
+  .pick-name{font-size:10px;color:var(--text2);margin-top:1px;}
+  .pick-right{text-align:right;}
+  .pick-upside{font-family:var(--mono);font-size:12px;color:var(--green);}
+  .pick-score{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
+  .pick-rank{font-family:var(--mono);font-size:10px;color:var(--blue);width:20px;}
 
-  .sector-grid {
-    display: grid;
-    grid-template-columns: repeat(11, 1fr);
-    gap: 6px; padding: 12px 14px;
-  }
-  .sector-cell {
-    border-radius: 6px; padding: 8px 6px;
-    text-align: center; cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
-    border: 0.5px solid transparent;
-    position: relative; overflow: hidden;
-  }
-  .sector-cell:hover { transform: translateY(-2px); border-color: var(--border2); }
-  .sector-cell.selected { border-color: var(--blue) !important; }
-  .sector-name { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 0.05em; margin-bottom: 4px; }
-  .sector-ticker { font-family: var(--mono); font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; }
-  .sector-perf { font-family: var(--mono); font-size: 13px; font-weight: 600; }
-  .sector-flow { font-size: 9px; margin-top: 3px; opacity: 0.7; font-family: var(--mono); }
+  /* FLOWS */
+  .flow-item{margin-bottom:10px;}
+  .flow-item:last-child{margin-bottom:0;}
+  .flow-header{display:flex;justify-content:space-between;margin-bottom:4px;}
+  .flow-sector{font-size:11px;color:var(--text2);}
+  .flow-amount{font-family:var(--mono);font-size:11px;}
+  .flow-bar-bg{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;}
+  .flow-bar{height:100%;border-radius:3px;transition:width 1s ease;}
 
-  /* ROTATION FORECAST TABLE */
-  .rotation-table { width: 100%; border-collapse: collapse; }
-  .rotation-table th {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
-    color: var(--text3); text-transform: uppercase; text-align: left;
-    padding: 6px 8px; border-bottom: 0.5px solid var(--border2);
-  }
-  .rotation-table td { padding: 8px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
-  .rotation-table tr:last-child td { border-bottom: none; }
-  .rotation-table tr { transition: background 0.15s; cursor: pointer; }
-  .rotation-table tr:hover td { background: rgba(255,255,255,0.03); }
-  .from-to { display: flex; align-items: center; gap: 5px; font-size: 12px; }
-  .sector-tag {
-    font-family: var(--mono); font-size: 9px; padding: 2px 6px;
-    border-radius: 3px; white-space: nowrap;
-  }
-  .arrow-icon { color: var(--text3); font-size: 10px; }
-  .prob-bar { position: relative; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; margin-top: 3px; width: 60px; }
-  .prob-fill { height: 100%; border-radius: 2px; }
-  .prob-text { font-family: var(--mono); font-size: 11px; font-weight: 500; }
-  .upside-val { font-family: var(--mono); font-size: 12px; color: var(--green); font-weight: 500; }
-  .date-val { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+  /* CHART */
+  .chart-container{padding:14px;}
+  .chart-tabs{display:flex;gap:6px;margin-bottom:14px;}
+  .chart-tab{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;background:transparent;border:0.5px solid var(--border2);color:var(--text2);transition:all 0.15s;}
+  .chart-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
 
-  /* TOP PICKS */
-  .pick-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 0; border-bottom: 0.5px solid var(--border);
-  }
-  .pick-row:last-child { border-bottom: none; }
-  .pick-ticker { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text1); }
-  .pick-name { font-size: 10px; color: var(--text2); margin-top: 1px; }
-  .pick-right { text-align: right; }
-  .pick-upside { font-family: var(--mono); font-size: 12px; color: var(--green); }
-  .pick-score { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-top: 2px; }
-  .pick-rank { font-family: var(--mono); font-size: 10px; color: var(--blue); width: 20px; }
+  /* CYCLE */
+  .cycle-container{padding:14px;}
+  .cycle-visual{position:relative;width:100%;padding-bottom:100%;}
+  .cycle-svg{position:absolute;inset:0;width:100%;height:100%;}
 
-  /* FLOW METER */
-  .flow-item { margin-bottom: 10px; }
-  .flow-item:last-child { margin-bottom: 0; }
-  .flow-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-  .flow-sector { font-size: 11px; color: var(--text2); }
-  .flow-amount { font-family: var(--mono); font-size: 11px; }
-  .flow-bar-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
-  .flow-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
-
-  /* CHART AREA */
-  .chart-container { padding: 14px; }
-  .chart-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-  .chart-tab {
-    font-family: var(--mono); font-size: 10px; padding: 4px 10px;
-    border-radius: 20px; cursor: pointer; letter-spacing: 0.05em;
-    background: transparent; border: 0.5px solid var(--border2);
-    color: var(--text2); transition: all 0.15s;
-  }
-  .chart-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
-
-  /* BUSINESS CYCLE */
-  .cycle-container { padding: 14px; }
-  .cycle-visual { position: relative; width: 100%; padding-bottom: 100%; }
-  .cycle-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-  /* RSI GAUGES */
-  .gauge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 14px; }
-  .gauge-item { text-align: center; }
-  .gauge-label { font-family: var(--mono); font-size: 9px; color: var(--text2); letter-spacing: 0.05em; margin-bottom: 4px; }
-  .gauge-val { font-family: var(--mono); font-size: 18px; font-weight: 500; }
-  .gauge-sub { font-size: 9px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
+  /* GAUGES */
+  .gauge-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;}
+  .gauge-item{text-align:center;}
+  .gauge-label{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:0.05em;margin-bottom:4px;}
+  .gauge-val{font-family:var(--mono);font-size:18px;font-weight:500;}
+  .gauge-sub{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
 
   /* SIGNALS TICKER */
-  .signals-bar {
-    display: flex; align-items: center; gap: 0;
-    background: var(--bg3); border: 0.5px solid var(--border);
-    border-radius: 8px; overflow: hidden; margin-bottom: 12px;
-    height: 32px;
-  }
-  .signals-label {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
-    color: var(--text3); padding: 0 12px; border-right: 0.5px solid var(--border2);
-    white-space: nowrap; height: 100%; display: flex; align-items: center;
-  }
-  .ticker-scroll { flex: 1; overflow: hidden; position: relative; }
-  .ticker-inner {
-    display: flex; gap: 0; white-space: nowrap;
-    animation: scroll-ticker 40s linear infinite;
-  }
-  @keyframes scroll-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .ticker-item {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 0 16px; border-right: 0.5px solid var(--border); height: 32px;
-    font-family: var(--mono); font-size: 10px;
-  }
-  .ticker-name { color: var(--text2); }
-  .ticker-price { color: var(--text1); font-weight: 500; }
-  .ticker-chg-up { color: var(--green); }
-  .ticker-chg-dn { color: var(--red); }
+  .signals-bar{display:flex;align-items:center;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;height:32px;}
+  .signals-label{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--text3);padding:0 12px;border-right:0.5px solid var(--border2);white-space:nowrap;height:100%;display:flex;align-items:center;}
+  .ticker-scroll{flex:1;overflow:hidden;position:relative;}
+  .ticker-inner{display:flex;white-space:nowrap;animation:scroll-ticker 40s linear infinite;}
+  @keyframes scroll-ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  .ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 16px;border-right:0.5px solid var(--border);height:32px;font-family:var(--mono);font-size:10px;}
+  .ticker-name{color:var(--text2);}
+  .ticker-price{color:var(--text1);font-weight:500;}
+  .ticker-chg-up{color:var(--green);}
+  .ticker-chg-dn{color:var(--red);}
 
   /* FOOTER */
-  footer {
-    margin-top: 12px; padding: 10px 20px;
-    background: var(--bg2); border: 0.5px solid var(--border);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .footer-note { font-size: 10px; color: var(--text3); font-family: var(--mono); }
-  .refresh-btn {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
-    padding: 5px 14px; border-radius: 20px; cursor: pointer;
-    background: rgba(59,130,246,0.1); border: 0.5px solid rgba(59,130,246,0.3);
-    color: var(--blue); transition: all 0.15s;
-  }
-  .refresh-btn:hover { background: rgba(59,130,246,0.2); }
+  footer{margin-top:12px;padding:10px 20px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:space-between;}
+  .footer-note{font-size:10px;color:var(--text3);font-family:var(--mono);}
+  .refresh-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;padding:5px 14px;border-radius:20px;cursor:pointer;background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);transition:all 0.15s;}
+  .refresh-btn:hover{background:rgba(59,130,246,0.2);}
 
   /* DETAIL MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); z-index: 100;
-    align-items: center; justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--bg2); border: 0.5px solid var(--border2);
-    border-radius: 12px; padding: 24px; max-width: 480px; width: 90%;
-    position: relative;
-  }
-  .modal-close {
-    position: absolute; top: 12px; right: 14px;
-    background: none; border: none; color: var(--text2);
-    font-size: 16px; cursor: pointer;
-  }
-  .modal-title { font-family: var(--serif); font-size: 20px; margin-bottom: 4px; }
-  .modal-sub { font-family: var(--mono); font-size: 10px; color: var(--text2); margin-bottom: 16px; letter-spacing: 0.05em; }
-  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .modal-stat { background: var(--bg3); border-radius: 8px; padding: 12px; }
-  .modal-stat-label { font-family: var(--mono); font-size: 9px; color: var(--text2); letter-spacing: 0.08em; margin-bottom: 4px; }
-  .modal-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 500; }
-  .modal-picks-title { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-  .modal-picks { display: flex; gap: 8px; flex-wrap: wrap; }
-  .modal-pick-chip {
-    font-family: var(--mono); font-size: 11px; padding: 4px 10px;
-    border-radius: 20px; background: var(--bg3); border: 0.5px solid var(--border2);
-  }
-  .modal-rationale { font-size: 12px; line-height: 1.6; color: var(--text2); margin-top: 12px; }
-
-  .num-up { color: var(--green); }
-  .num-dn { color: var(--red); }
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px;padding:24px;max-width:480px;width:90%;position:relative;}
+  .modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;}
+  .modal-title{font-family:var(--serif);font-size:20px;margin-bottom:4px;}
+  .modal-sub{font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:16px;letter-spacing:0.05em;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .modal-stat{background:var(--bg3);border-radius:8px;padding:12px;}
+  .modal-stat-label{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:0.08em;margin-bottom:4px;}
+  .modal-stat-val{font-family:var(--mono);font-size:18px;font-weight:500;}
+  .modal-picks-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
+  .modal-picks{display:flex;gap:8px;flex-wrap:wrap;}
+  .modal-pick-chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;background:var(--bg3);border:0.5px solid var(--border2);}
+  .modal-rationale{font-size:12px;line-height:1.6;color:var(--text2);margin-top:12px;}
 </style>
 </head>
 <body>
 <div class="dashboard">
-  <!-- HEADER -->
+
   <header>
     <div class="header-left">
       <div class="logo">Sector<span>Pulse</span></div>
@@ -306,42 +230,45 @@
     </div>
   </header>
 
-  <!-- SIGNALS TICKER -->
   <div class="signals-bar">
     <div class="signals-label">SIGNALS</div>
-    <div class="ticker-scroll">
-      <div class="ticker-inner" id="tickerInner"></div>
-    </div>
+    <div class="ticker-scroll"><div class="ticker-inner" id="tickerInner"></div></div>
   </div>
 
-  <!-- SECTOR HEATMAP -->
-  <div class="panel span-full" style="margin-bottom:0">
+  <!-- HEATMAP -->
+  <div class="panel" style="margin-bottom:0">
     <div class="panel-header">
-      <span class="panel-title">Sector Performance &amp; ETF Heatmap</span>
+      <div class="panel-header-left">
+        <span class="panel-title">Sector Performance &amp; ETF Heatmap</span>
+        <button class="tip-btn" onclick="showTip('heatmap',this)" title="Learn about this panel">?</button>
+      </div>
       <span class="panel-badge badge-blue" id="heatmapPeriod">1W</span>
     </div>
     <div class="sector-grid" id="sectorGrid"></div>
   </div>
 
-  <!-- MAIN 3-COL GRID -->
-  <div class="main-grid" style="margin-top: 12px;">
+  <div class="main-grid" style="margin-top:12px;">
 
-    <!-- LEFT COLUMN -->
+    <!-- LEFT -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- MACRO INDICATORS -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Macro Indicators</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Macro Indicators</span>
+            <button class="tip-btn" onclick="showTip('macro',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-amber">LIVE</span>
         </div>
         <div class="panel-body" id="macroPanel"></div>
       </div>
 
-      <!-- BUSINESS CYCLE -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Business Cycle Position</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Business Cycle Position</span>
+            <button class="tip-btn" onclick="showTip('cycle',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-purple">MODEL</span>
         </div>
         <div class="cycle-container">
@@ -351,10 +278,12 @@
         </div>
       </div>
 
-      <!-- ETF FLOWS -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">ETF Fund Flows (5-Day)</span>
+          <div class="panel-header-left">
+            <span class="panel-title">ETF Fund Flows (5-Day)</span>
+            <button class="tip-btn" onclick="showTip('flows',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-green">$B</span>
         </div>
         <div class="panel-body" id="flowPanel"></div>
@@ -362,87 +291,93 @@
 
     </div>
 
-    <!-- CENTER COLUMN -->
+    <!-- CENTER -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- ROTATION FORECAST -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Upcoming Rotation Signals</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Upcoming Rotation Signals</span>
+            <button class="tip-btn" onclick="showTip('rotation',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-amber">FORECAST</span>
         </div>
         <div style="padding:0 4px;">
           <table class="rotation-table">
-            <thead>
-              <tr>
-                <th>FROM → TO</th>
-                <th>PROBABILITY</th>
-                <th>UPSIDE</th>
-                <th>EXP. DATE</th>
-                <th>CATALYST</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              <th>FROM → TO</th><th>PROBABILITY</th><th>UPSIDE</th><th>EXP. DATE</th><th>CATALYST</th>
+            </tr></thead>
             <tbody id="rotationTable"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- RELATIVE STRENGTH CHART -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Relative Strength vs S&amp;P 500</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Relative Strength vs S&amp;P 500</span>
+            <button class="tip-btn" onclick="showTip('rs',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-blue">RS CHART</span>
         </div>
         <div class="chart-container">
           <div class="chart-tabs" id="rsChartTabs"></div>
           <div style="position:relative;height:200px;">
-            <canvas id="rsChart" role="img" aria-label="Relative strength chart for selected sector vs S&P 500 over 12 weeks"></canvas>
+            <canvas id="rsChart" role="img" aria-label="Relative strength of selected sector vs S&P 500 over 12 weeks"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- BREADTH INDICATORS -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Sector Breadth (% Above 50DMA)</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Sector Breadth (% Above 50DMA)</span>
+            <button class="tip-btn" onclick="showTip('breadth',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-blue">BREADTH</span>
         </div>
         <div style="position:relative;height:180px;padding:14px;">
-          <canvas id="breadthChart" role="img" aria-label="Bar chart showing percent of stocks above 50-day moving average by sector"></canvas>
+          <canvas id="breadthChart" role="img" aria-label="Percent of stocks above 50-day moving average by sector"></canvas>
         </div>
       </div>
 
     </div>
 
-    <!-- RIGHT COLUMN -->
+    <!-- RIGHT -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- TOP STOCK PICKS -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Top Rotation Picks</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Top Rotation Picks</span>
+            <button class="tip-btn" onclick="showTip('picks',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-green">AI RANKED</span>
         </div>
         <div class="panel-body" id="topPicks"></div>
       </div>
 
-      <!-- RSI GAUGES -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Sector RSI Gauges</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Sector RSI Gauges</span>
+            <button class="tip-btn" onclick="showTip('rsi',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-amber">OVERBOUGHT/SOLD</span>
         </div>
         <div class="gauge-grid" id="gaugeGrid"></div>
       </div>
 
-      <!-- PUT/CALL RATIO -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Options Flow (Put/Call)</span>
+          <div class="panel-header-left">
+            <span class="panel-title">Options Flow (Put/Call)</span>
+            <button class="tip-btn" onclick="showTip('putcall',this)" title="Learn about this panel">?</button>
+          </div>
           <span class="panel-badge badge-purple">SMART MONEY</span>
         </div>
         <div style="position:relative;height:140px;padding:14px;">
-          <canvas id="pcChart" role="img" aria-label="Put/call ratio by sector showing options market sentiment"></canvas>
+          <canvas id="pcChart" role="img" aria-label="Put/call ratio by sector"></canvas>
         </div>
       </div>
 
@@ -450,9 +385,18 @@
   </div>
 
   <footer>
-    <div class="footer-note">DATA: Simulated market data for educational purposes · Sources: ETF flows, options market, macro indicators · Built for GitHub Pages deployment</div>
+    <div class="footer-note">DATA: Simulated market data for educational purposes · Sources: ETF flows, options market, macro indicators · Built for GitHub Pages</div>
     <button class="refresh-btn" onclick="refreshAll()">↻ REFRESH DATA</button>
   </footer>
+</div>
+
+<!-- TOOLTIP POPUP (singleton) -->
+<div class="tip-popup" id="tipPopup">
+  <div class="tip-popup-header">
+    <span class="tip-popup-title" id="tipTitle">PANEL GUIDE</span>
+    <button class="tip-popup-close" onclick="closeTip()">✕</button>
+  </div>
+  <div class="tip-popup-body" id="tipBody"></div>
 </div>
 
 <!-- DETAIL MODAL -->
@@ -461,153 +405,366 @@
 </div>
 
 <script>
-const SECTORS = [
-  { ticker:'XLK', name:'Technology', perf:null, flow:null, rsi:null, color:'#3b82f6', breadth:null },
-  { ticker:'XLE', name:'Energy', perf:null, flow:null, rsi:null, color:'#f59e0b', breadth:null },
-  { ticker:'XLF', name:'Financials', perf:null, flow:null, rsi:null, color:'#22c55e', breadth:null },
-  { ticker:'XLV', name:'Healthcare', perf:null, flow:null, rsi:null, color:'#14b8a6', breadth:null },
-  { ticker:'XLI', name:'Industrials', perf:null, flow:null, rsi:null, color:'#6366f1', breadth:null },
-  { ticker:'XLP', name:'Cons. Staples', perf:null, flow:null, rsi:null, color:'#ec4899', breadth:null },
-  { ticker:'XLY', name:'Cons. Disc.', perf:null, flow:null, rsi:null, color:'#f97316', breadth:null },
-  { ticker:'XLU', name:'Utilities', perf:null, flow:null, rsi:null, color:'#8b5cf6', breadth:null },
-  { ticker:'XLRE', name:'Real Estate', perf:null, flow:null, rsi:null, color:'#10b981', breadth:null },
-  { ticker:'XLB', name:'Materials', perf:null, flow:null, rsi:null, color:'#06b6d4', breadth:null },
-  { ticker:'XLC', name:'Comm. Svcs.', perf:null, flow:null, rsi:null, color:'#a78bfa', breadth:null },
+const SECTORS=[
+  {ticker:'XLK',name:'Technology',perf:null,flow:null,rsi:null,color:'#3b82f6',breadth:null},
+  {ticker:'XLE',name:'Energy',perf:null,flow:null,rsi:null,color:'#f59e0b',breadth:null},
+  {ticker:'XLF',name:'Financials',perf:null,flow:null,rsi:null,color:'#22c55e',breadth:null},
+  {ticker:'XLV',name:'Healthcare',perf:null,flow:null,rsi:null,color:'#14b8a6',breadth:null},
+  {ticker:'XLI',name:'Industrials',perf:null,flow:null,rsi:null,color:'#6366f1',breadth:null},
+  {ticker:'XLP',name:'Cons. Staples',perf:null,flow:null,rsi:null,color:'#ec4899',breadth:null},
+  {ticker:'XLY',name:'Cons. Disc.',perf:null,flow:null,rsi:null,color:'#f97316',breadth:null},
+  {ticker:'XLU',name:'Utilities',perf:null,flow:null,rsi:null,color:'#8b5cf6',breadth:null},
+  {ticker:'XLRE',name:'Real Estate',perf:null,flow:null,rsi:null,color:'#10b981',breadth:null},
+  {ticker:'XLB',name:'Materials',perf:null,flow:null,rsi:null,color:'#06b6d4',breadth:null},
+  {ticker:'XLC',name:'Comm. Svcs.',perf:null,flow:null,rsi:null,color:'#a78bfa',breadth:null},
 ];
 
-const MACRO_DATA = [
-  { label:'Fed Funds Rate', value:'5.25%', signal:'bear', icon:'fa-landmark' },
-  { label:'10Y-2Y Spread', value:'+0.42%', signal:'bull', icon:'fa-chart-line' },
-  { label:'ISM Manufacturing', value:'52.4', signal:'bull', icon:'fa-industry' },
-  { label:'CPI YoY', value:'3.1%', signal:'neut', icon:'fa-coins' },
-  { label:'VIX', value:'16.8', signal:'bull', icon:'fa-wave-square' },
-  { label:'Credit Spreads', value:'1.2%', signal:'bull', icon:'fa-handshake' },
-  { label:'DXY (USD)', value:'103.4', signal:'neut', icon:'fa-dollar-sign' },
-  { label:'WTI Crude', value:'$78.20', signal:'bull', icon:'fa-oil-well' },
+const MACRO_DATA=[
+  {label:'Fed Funds Rate',value:'5.25%',signal:'bear',icon:'fa-landmark'},
+  {label:'10Y-2Y Spread',value:'+0.42%',signal:'bull',icon:'fa-chart-line'},
+  {label:'ISM Manufacturing',value:'52.4',signal:'bull',icon:'fa-industry'},
+  {label:'CPI YoY',value:'3.1%',signal:'neut',icon:'fa-coins'},
+  {label:'VIX',value:'16.8',signal:'bull',icon:'fa-wave-square'},
+  {label:'Credit Spreads',value:'1.2%',signal:'bull',icon:'fa-handshake'},
+  {label:'DXY (USD)',value:'103.4',signal:'neut',icon:'fa-dollar-sign'},
+  {label:'WTI Crude',value:'$78.20',signal:'bull',icon:'fa-oil-well'},
 ];
 
-const ROTATIONS = [
-  { from:'Technology', to:'Energy', fromColor:'#3b82f6', toColor:'#f59e0b', prob:74, upside:'+12.4%', date:'Jun–Jul 2025', catalyst:'Oil supply tightening + Fed pause', picks:['XOM','CVX','SLB','PSX','VLO'], rationale:'Rising oil prices and a Fed pause typically trigger capital rotation from high-multiple tech into cash-generating energy majors. Supply constraints from OPEC+ support the thesis.' },
-  { from:'Cons. Disc.', to:'Financials', fromColor:'#f97316', toColor:'#22c55e', prob:68, upside:'+9.8%', date:'Jul–Aug 2025', catalyst:'Yield curve steepening, credit expansion', picks:['JPM','GS','BAC','WFC','MS'], rationale:'Steepening yield curve improves net interest margins for banks. Credit growth typically accelerates in mid-expansion, benefiting major financial institutions.' },
-  { from:'Utilities', to:'Industrials', fromColor:'#8b5cf6', toColor:'#6366f1', prob:61, upside:'+8.2%', date:'Aug 2025', catalyst:'Infrastructure spending cycle', picks:['CAT','DE','HON','GE','ETN'], rationale:'Government infrastructure bills and reshoring trends are driving industrial capex. Utilities typically underperform when growth expectations rise.' },
-  { from:'Healthcare', to:'Materials', fromColor:'#14b8a6', toColor:'#06b6d4', prob:55, upside:'+7.1%', date:'Sep 2025', catalyst:'China stimulus, commodity demand', picks:['FCX','NEM','APD','LIN','NUE'], rationale:'Anticipated Chinese stimulus measures would boost commodity demand. Materials sector trading at relative discount vs historical norms.' },
-  { from:'Comm. Svcs.', to:'Cons. Staples', fromColor:'#a78bfa', toColor:'#ec4899', prob:48, upside:'+5.9%', date:'Q4 2025', catalyst:'Late-cycle risk-off shift signals', picks:['PG','KO','PEP','WMT','COST'], rationale:'Approaching late-cycle dynamics may trigger defensive rotation. Consumer staples historically outperform in the 6 months before recessions.' },
+const ROTATIONS=[
+  {from:'Technology',to:'Energy',fromColor:'#3b82f6',toColor:'#f59e0b',prob:74,upside:'+12.4%',date:'Jun–Jul 2025',catalyst:'Oil supply tightening + Fed pause',picks:['XOM','CVX','SLB','PSX','VLO'],rationale:'Rising oil prices and a Fed pause typically trigger capital rotation from high-multiple tech into cash-generating energy majors. Supply constraints from OPEC+ support the thesis.'},
+  {from:'Cons. Disc.',to:'Financials',fromColor:'#f97316',toColor:'#22c55e',prob:68,upside:'+9.8%',date:'Jul–Aug 2025',catalyst:'Yield curve steepening, credit expansion',picks:['JPM','GS','BAC','WFC','MS'],rationale:'Steepening yield curve improves net interest margins for banks. Credit growth typically accelerates in mid-expansion, benefiting major financial institutions.'},
+  {from:'Utilities',to:'Industrials',fromColor:'#8b5cf6',toColor:'#6366f1',prob:61,upside:'+8.2%',date:'Aug 2025',catalyst:'Infrastructure spending cycle',picks:['CAT','DE','HON','GE','ETN'],rationale:'Government infrastructure bills and reshoring trends are driving industrial capex. Utilities typically underperform when growth expectations rise.'},
+  {from:'Healthcare',to:'Materials',fromColor:'#14b8a6',toColor:'#06b6d4',prob:55,upside:'+7.1%',date:'Sep 2025',catalyst:'China stimulus, commodity demand',picks:['FCX','NEM','APD','LIN','NUE'],rationale:'Anticipated Chinese stimulus measures would boost commodity demand. Materials sector trading at relative discount vs historical norms.'},
+  {from:'Comm. Svcs.',to:'Cons. Staples',fromColor:'#a78bfa',toColor:'#ec4899',prob:48,upside:'+5.9%',date:'Q4 2025',catalyst:'Late-cycle risk-off shift signals',picks:['PG','KO','PEP','WMT','COST'],rationale:'Approaching late-cycle dynamics may trigger defensive rotation. Consumer staples historically outperform in the 6 months before recessions.'},
 ];
 
-const TOP_PICKS = [
-  { ticker:'XOM', name:'Exxon Mobil', sector:'Energy', upside:'+14.2%', score:92, reason:'Strong FCF, dividend growth' },
-  { ticker:'JPM', name:'JPMorgan Chase', sector:'Financials', upside:'+11.8%', score:88, reason:'NIM expansion play' },
-  { ticker:'CVX', name:'Chevron', sector:'Energy', upside:'+11.1%', score:85, reason:'Low P/E vs peers' },
-  { ticker:'CAT', name:'Caterpillar', sector:'Industrials', upside:'+9.4%', score:82, reason:'Infra cycle beneficiary' },
-  { ticker:'GS', name:'Goldman Sachs', sector:'Financials', upside:'+9.0%', score:79, reason:'IB recovery, buybacks' },
-  { ticker:'FCX', name:'Freeport-McMoRan', sector:'Materials', upside:'+8.7%', score:76, reason:'Copper demand thesis' },
-  { ticker:'SLB', name:'SLB (Schlumberger)', sector:'Energy', upside:'+8.2%', score:74, reason:'Intl oilfield services' },
+const TOP_PICKS=[
+  {ticker:'XOM',name:'Exxon Mobil',sector:'Energy',upside:'+14.2%',score:92,reason:'Strong FCF, dividend growth'},
+  {ticker:'JPM',name:'JPMorgan Chase',sector:'Financials',upside:'+11.8%',score:88,reason:'NIM expansion play'},
+  {ticker:'CVX',name:'Chevron',sector:'Energy',upside:'+11.1%',score:85,reason:'Low P/E vs peers'},
+  {ticker:'CAT',name:'Caterpillar',sector:'Industrials',upside:'+9.4%',score:82,reason:'Infra cycle beneficiary'},
+  {ticker:'GS',name:'Goldman Sachs',sector:'Financials',upside:'+9.0%',score:79,reason:'IB recovery, buybacks'},
+  {ticker:'FCX',name:'Freeport-McMoRan',sector:'Materials',upside:'+8.7%',score:76,reason:'Copper demand thesis'},
+  {ticker:'SLB',name:'SLB (Schlumberger)',sector:'Energy',upside:'+8.2%',score:74,reason:'Intl oilfield services'},
 ];
 
-const TICKER_DATA = [
-  {name:'XLK', price:'195.42', chg:'+1.2%', up:true},
-  {name:'XLE', price:'88.61', chg:'+2.8%', up:true},
-  {name:'XLF', price:'41.33', chg:'+0.9%', up:true},
-  {name:'XLV', price:'142.77', chg:'-0.4%', up:false},
-  {name:'XLI', price:'118.55', chg:'+1.6%', up:true},
-  {name:'XLP', price:'72.14', chg:'-0.2%', up:false},
-  {name:'S&P 500', price:'5,243', chg:'+0.7%', up:true},
-  {name:'QQQ', price:'446.88', chg:'+1.1%', up:true},
-  {name:'XLC', price:'86.40', chg:'+0.5%', up:true},
-  {name:'XLRE', price:'38.20', chg:'-0.8%', up:false},
-  {name:'XLU', price:'65.33', chg:'-0.6%', up:false},
-  {name:'XLB', price:'89.12', chg:'+1.9%', up:true},
-  {name:'VIX', price:'16.8', chg:'-5.2%', up:false},
-  {name:'10Y YIELD', price:'4.41%', chg:'+0.04', up:true},
+const TICKER_DATA=[
+  {name:'XLK',price:'195.42',chg:'+1.2%',up:true},{name:'XLE',price:'88.61',chg:'+2.8%',up:true},
+  {name:'XLF',price:'41.33',chg:'+0.9%',up:true},{name:'XLV',price:'142.77',chg:'-0.4%',up:false},
+  {name:'XLI',price:'118.55',chg:'+1.6%',up:true},{name:'XLP',price:'72.14',chg:'-0.2%',up:false},
+  {name:'S&P 500',price:'5,243',chg:'+0.7%',up:true},{name:'QQQ',price:'446.88',chg:'+1.1%',up:true},
+  {name:'XLC',price:'86.40',chg:'+0.5%',up:true},{name:'XLRE',price:'38.20',chg:'-0.8%',up:false},
+  {name:'XLU',price:'65.33',chg:'-0.6%',up:false},{name:'XLB',price:'89.12',chg:'+1.9%',up:true},
+  {name:'VIX',price:'16.8',chg:'-5.2%',up:false},{name:'10Y YIELD',price:'4.41%',chg:'+0.04',up:true},
 ];
 
-let rsChart, breadthChart, pcChart;
-let selectedSector = 0;
+// ── TOOLTIP CONTENT ──────────────────────────────────────────────────────────
+const TIPS={
+  heatmap:{
+    title:'SECTOR HEATMAP GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Each tile = one S&P 500 sector ETF. <strong>Color intensity</strong> shows weekly price change — bright green means strong inflows and price gains, deep red means selling pressure. The small number below the % is the 5-day ETF flow in billions.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to use it</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>2+ sectors turning green together</strong> = broad risk-on rally. Good time to stay invested.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>One sector surging while others fall</strong> = rotation in progress. The green sector is receiving money from the red ones.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Most sectors red</strong> = risk-off environment. Consider defensive sectors (XLV, XLU, XLP).</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Newbie tip</div>
+        <div class="tip-section-text">Click any tile to load that sector's relative strength chart. Watch for a sector that's been red for 2–3 weeks suddenly turning flat or green — that's often the early signal of a rotation starting.</div>
+      </div>
+      <div class="tip-warning">⚠ One week of data is noisy. Confirm with the Rotation Signals table and RS Chart before acting.</div>
+    `
+  },
+  macro:{
+    title:'MACRO INDICATORS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Eight key economic signals that institutional investors watch to decide <strong>which sectors to rotate into</strong>. These are the "upstream" drivers — they move before stocks do.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading each signal</div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Fed Funds Rate:</strong> High rates = bearish for growth stocks (tech), bullish for banks (financials). A rate cut is the #1 trigger for big rotations.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>10Y–2Y Spread (yield curve):</strong> Positive & widening = steepening curve = buy financials. Negative = inverted = recession warning, buy defensives.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>ISM Manufacturing:</strong> Above 50 = expansion = bullish for industrials & materials. Below 50 = contraction.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>VIX (fear index):</strong> Below 20 = calm market, risk-on. Above 30 = fear, rotate to defensives. Above 40 = panic.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Credit Spreads:</strong> Tight (&lt;2%) = healthy economy. Widening fast = stress signal, exit cyclicals.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Practical rule of thumb</div>
+        <div class="tip-section-text">When <strong>3+ indicators turn bullish simultaneously</strong>, the probability of a sustained rally in cyclical sectors (tech, energy, industrials) rises significantly. When 3+ turn bearish, shift to healthcare, utilities, and staples.</div>
+      </div>
+      <div class="tip-warning">⚠ Macro data is published monthly or weekly — it lags real-time market moves by days to weeks.</div>
+    `
+  },
+  cycle:{
+    title:'BUSINESS CYCLE GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The economy moves in predictable phases. Each phase historically favors different sectors. The glowing dot shows where we currently are in the cycle.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The 5 phases</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Recovery:</strong> After recession. Buy Financials, Tech. Earnings start recovering, rates low.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Early Expansion:</strong> Strong growth. Buy Consumer Discretionary, Materials. Jobs rising, spending up.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Mid Expansion (now):</strong> Peak growth. Buy Tech, Industrials. Corporate profits at highs.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Late Expansion:</strong> Growth slowing. Rotate to Energy, Materials. Inflation often rises here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Recession:</strong> Buy Healthcare, Utilities, Consumer Staples. Defensive sectors hold value.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to use it</div>
+        <div class="tip-section-text">Match the current phase to the Rotation Signals table. If the model says "Mid Expansion," rotations into Tech and Industrials have historically succeeded <strong>65–70%</strong> of the time over a 6-month horizon.</div>
+      </div>
+      <div class="tip-warning">⚠ Cycle timing is an art, not a science. The model can be wrong by 3–6 months. Use it as context, not a precise timer.</div>
+    `
+  },
+  flows:{
+    title:'ETF FUND FLOWS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The total dollars (in billions) that investors moved <strong>into or out of</strong> each sector ETF over the past 5 trading days. This is one of the most direct ways to see rotation happening in real time.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to read it</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Large green bar ($1B+):</strong> Big institutional money is actively buying this sector. High-conviction signal — institutions don't move billions by accident.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Small positive flow with rising price:</strong> Healthy accumulation. Good entry timing.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Large red bar:</strong> Institutions are selling. Don't fight the flow — this sector may underperform for weeks.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The key pattern to watch</div>
+        <div class="tip-section-text">When you see <strong>outflows from one sector and simultaneous inflows into another</strong> for 3+ consecutive days, that's a confirmed rotation. This is more reliable than price alone because price can be manipulated; actual fund flows cannot.</div>
+      </div>
+      <div class="tip-warning">⚠ Short-term flows can be noisy. A single day of large inflow might be one fund rebalancing. Look for 3–5 day trends.</div>
+    `
+  },
+  rotation:{
+    title:'ROTATION SIGNALS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Forecasted capital movements from one sector to another, ranked by probability. Each row represents a thesis that money is about to leave the "From" sector and enter the "To" sector. <strong>Click any row</strong> for full analysis and stock picks.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Understanding probability</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>70%+:</strong> Strong signal. Multiple macro, flow, and technical indicators are aligned. Consider sizing up positions.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>55–70%:</strong> Moderate signal. Good risk/reward but monitor for confirmation. Use smaller position sizes.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 55%:</strong> Speculative. Only for experienced traders with high risk tolerance. Don't bet the farm.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to act on this</div>
+        <div class="tip-section-text">Don't rotate your entire portfolio at once. A common approach: <strong>trim 25–30% of a "From" sector position</strong> when probability crosses 65%, then add to the "To" sector. Wait for the ETF of the destination sector to break above its 20-day moving average as confirmation.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Expected upside note</div>
+        <div class="tip-section-text">The % upside is a <strong>relative</strong> estimate — how much the destination sector is expected to outperform the S&P 500 over the forecast period, not an absolute price target.</div>
+      </div>
+      <div class="tip-warning">⚠ No forecast is guaranteed. Even a 74% probability means it fails 1 in 4 times. Always use stop-losses.</div>
+    `
+  },
+  rs:{
+    title:'RELATIVE STRENGTH GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">This chart shows how a sector is performing <strong>relative to the S&P 500</strong> — not in absolute terms. A line going up means the sector is outperforming the market, even if the market itself is falling.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the chart</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Line trending up & above zero:</strong> This sector is a leader. Money is rotating IN. Strong buy signal for sector plays.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Line crossing from negative to positive:</strong> Rotation just beginning. Often the best entry point — early but confirmed.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Line trending down & below zero:</strong> This sector is a laggard. Avoid or short via inverse ETFs.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to use the tabs</div>
+        <div class="tip-section-text">Click through the sector tabs to compare. Look for the sector where the RS line has been negative for 4–6 weeks then starts flattening — that's the classic <strong>"base and turn"</strong> pattern that often precedes a major rotation.</div>
+      </div>
+      <div class="tip-warning">⚠ RS charts are best used over 4–13 week windows. Daily noise can be misleading. Focus on the trend direction, not individual wiggles.</div>
+    `
+  },
+  breadth:{
+    title:'SECTOR BREADTH GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">For each sector, the percentage of individual stocks that are trading <strong>above their own 50-day moving average</strong>. This tells you whether a sector's rally (or fall) is broad-based or driven by just a few big names.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the bars</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Above 60% (green):</strong> Healthy, broad rally. Most stocks in the sector are participating. High-quality signal.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>40–60% (blue):</strong> Mixed. Some stocks strong, some weak. Sector-level ETFs may be okay but stock-picking matters more here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 40% (red):</strong> Weak breadth. Even if the sector ETF looks OK, most stocks are broken. Avoid sector exposure until breadth recovers.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The key insight</div>
+        <div class="tip-section-text">A sector ETF can be rising while breadth falls — this is called a <strong>"narrowing rally"</strong> and it almost always ends badly. If XLK is up 5% but only 35% of tech stocks are above their 50DMA, it's being driven by 2–3 mega-caps. That's fragile.</div>
+      </div>
+      <div class="tip-warning">⚠ Breadth is a leading indicator of sustainability. Strong price + weak breadth = warning. Weak price + rising breadth = opportunity.</div>
+    `
+  },
+  picks:{
+    title:'TOP ROTATION PICKS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Individual stocks ranked by a composite score that weighs their position in a rotation-favored sector, relative valuation, momentum, and analyst estimates. Higher score = stronger alignment with current rotation thesis.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Understanding the score</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Score 85–100:</strong> High conviction. Sector tailwind + strong fundamentals + momentum aligned. Core position candidate.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Score 70–84:</strong> Good candidate. One or two factors slightly weaker. Good for diversified exposure.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Score below 70:</strong> Speculative pick. In the right sector but less compelling fundamentals. Smaller sizing recommended.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Practical advice for beginners</div>
+        <div class="tip-section-text">Rather than picking individual stocks, consider <strong>buying the sector ETF</strong> (e.g., XLE for energy) first. It's less risky than single stocks. Once comfortable, layer in the top-scored individual names for potentially higher returns.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Position sizing suggestion</div>
+        <div class="tip-section-text">A common rule: never put more than <strong>5% of your portfolio</strong> in a single stock. For sector ETFs, 10–15% per sector is reasonable. Diversification across 3–4 rotation plays reduces your risk significantly.</div>
+      </div>
+      <div class="tip-warning">⚠ This is not financial advice. Upside estimates are model outputs, not guarantees. Always do your own research before investing.</div>
+    `
+  },
+  rsi:{
+    title:'RSI GAUGES GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The <strong>Relative Strength Index (RSI)</strong> for each sector ETF, on a 0–100 scale. RSI measures how fast and how much prices have moved — it tells you if a sector is "overbought" (likely to pull back) or "oversold" (potentially ready to bounce).</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The zones</div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>RSI above 70 = Overbought:</strong> The sector has risen too fast. Not necessarily time to sell, but avoid chasing. Wait for RSI to cool below 60 before new entries.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>RSI 45–65 = Healthy trend:</strong> Normal range during an uptrend. Good time to add to existing positions.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>RSI below 30 = Oversold:</strong> Sector has been beaten down. Often a contrarian buy signal — especially powerful when combined with positive rotation thesis.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The rotation play</div>
+        <div class="tip-section-text">The ideal rotation entry is: <strong>sector in Rotation table with high probability + RSI below 45</strong>. This means money is expected to flow IN, but the sector hasn't moved yet. That's where the best risk/reward lies.</div>
+      </div>
+      <div class="tip-warning">⚠ RSI alone is not a buy/sell signal. A sector can stay overbought for months in a strong bull market. Always combine with trend and flow confirmation.</div>
+    `
+  },
+  putcall:{
+    title:'PUT/CALL RATIO GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The ratio of <strong>put options to call options</strong> traded on each sector ETF. Options are contracts that let traders bet on price direction — puts = betting on decline, calls = betting on rise. This ratio reveals where "smart money" is positioning.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the bars</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Below 1.0 (green):</strong> More calls than puts — traders are bullish on this sector. Institutions are buying upside exposure. Rotation-friendly signal.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Around 1.0 (neutral line):</strong> Balanced sentiment. No strong directional conviction from options market.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Above 1.0 (red):</strong> More puts than calls — traders are hedging or betting on decline. Could signal upcoming selling pressure or institutional protection of existing longs.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The contrarian angle</div>
+        <div class="tip-section-text">Extreme readings (above 1.4 or below 0.6) can be <strong>contrarian signals</strong>. When everyone is buying puts on a sector, the bad news is often already priced in — a surprise positive catalyst can trigger a violent short squeeze upward.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Best use case</div>
+        <div class="tip-section-text">Use this panel to <strong>confirm rotation signals</strong>: if the Rotation table says "buy Energy" and the put/call ratio on XLE is below 0.8, that's two independent signals aligned — much higher confidence.</div>
+      </div>
+      <div class="tip-warning">⚠ Options flow can be used for hedging (not just directional bets), so high put volume doesn't always mean bearishness. Context matters.</div>
+    `
+  }
+};
 
-function rand(min, max, dec=1) {
-  return parseFloat((Math.random()*(max-min)+min).toFixed(dec));
+// ── TOOLTIP LOGIC ─────────────────────────────────────────────────────────────
+let activeTipKey=null;
+function showTip(key,btn){
+  const popup=document.getElementById('tipPopup');
+  if(activeTipKey===key&&popup.classList.contains('visible')){closeTip();return;}
+  activeTipKey=key;
+  const t=TIPS[key];
+  document.getElementById('tipTitle').textContent=t.title;
+  document.getElementById('tipBody').innerHTML=t.body;
+  popup.classList.add('visible');
+  positionTip(btn,popup);
 }
-
-function generateSectorData() {
-  SECTORS.forEach(s => {
-    s.perf = rand(-3, 4.5);
-    s.flow = rand(-1.2, 2.8);
-    s.rsi = rand(30, 75);
-    s.breadth = rand(30, 80);
-  });
+function positionTip(btn,popup){
+  const r=btn.getBoundingClientRect();
+  const pw=300,ph=popup.scrollHeight||400;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  let left=r.left,top=r.bottom+6;
+  if(left+pw>vw-8)left=vw-pw-8;
+  if(left<8)left=8;
+  if(top+ph>vh-8)top=r.top-ph-6;
+  if(top<8)top=8;
+  popup.style.left=left+'px';
+  popup.style.top=top+'px';
 }
-
-function perfColor(v) {
-  if (v >= 2) return 'rgba(34,197,94,0.25)';
-  if (v >= 0.5) return 'rgba(34,197,94,0.12)';
-  if (v >= -0.5) return 'rgba(100,100,120,0.15)';
-  if (v >= -2) return 'rgba(239,68,68,0.12)';
-  return 'rgba(239,68,68,0.25)';
+function closeTip(){
+  document.getElementById('tipPopup').classList.remove('visible');
+  activeTipKey=null;
 }
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTip();});
+document.addEventListener('click',e=>{
+  const popup=document.getElementById('tipPopup');
+  if(popup.classList.contains('visible')&&!popup.contains(e.target)&&!e.target.classList.contains('tip-btn')){closeTip();}
+});
 
-function perfTextColor(v) {
-  if (v >= 0.5) return '#22c55e';
-  if (v >= -0.5) return '#8892a4';
-  return '#ef4444';
+// ── DATA & BUILD FUNCTIONS ────────────────────────────────────────────────────
+let rsChart,breadthChart,pcChart,selectedSector=0;
+function rand(min,max,dec=1){return parseFloat((Math.random()*(max-min)+min).toFixed(dec));}
+
+function generateSectorData(){
+  SECTORS.forEach(s=>{s.perf=rand(-3,4.5);s.flow=rand(-1.2,2.8);s.rsi=rand(30,75);s.breadth=rand(30,80);});
 }
+function perfColor(v){
+  if(v>=2)return'rgba(34,197,94,0.25)';if(v>=0.5)return'rgba(34,197,94,0.12)';
+  if(v>=-0.5)return'rgba(100,100,120,0.15)';if(v>=-2)return'rgba(239,68,68,0.12)';return'rgba(239,68,68,0.25)';
+}
+function perfTextColor(v){return v>=0.5?'#22c55e':v>=-0.5?'#8892a4':'#ef4444';}
 
-function buildTicker() {
-  const inner = document.getElementById('tickerInner');
-  const items = [...TICKER_DATA, ...TICKER_DATA].map(t =>
-    `<div class="ticker-item">
-      <span class="ticker-name">${t.name}</span>
-      <span class="ticker-price">${t.price}</span>
-      <span class="${t.up ? 'ticker-chg-up' : 'ticker-chg-dn'}">${t.chg}</span>
-    </div>`
+function buildTicker(){
+  const inner=document.getElementById('tickerInner');
+  inner.innerHTML=[...TICKER_DATA,...TICKER_DATA].map(t=>
+    `<div class="ticker-item"><span class="ticker-name">${t.name}</span><span class="ticker-price">${t.price}</span><span class="${t.up?'ticker-chg-up':'ticker-chg-dn'}">${t.chg}</span></div>`
   ).join('');
-  inner.innerHTML = items;
 }
 
-function buildSectorGrid() {
-  const grid = document.getElementById('sectorGrid');
-  grid.innerHTML = SECTORS.map((s, i) => `
-    <div class="sector-cell ${i === selectedSector ? 'selected' : ''}" 
-         style="background:${perfColor(s.perf)}" 
-         onclick="selectSector(${i})" title="${s.name}">
+function buildSectorGrid(){
+  document.getElementById('sectorGrid').innerHTML=SECTORS.map((s,i)=>`
+    <div class="sector-cell ${i===selectedSector?'selected':''}" style="background:${perfColor(s.perf)}" onclick="selectSector(${i})">
       <div class="sector-name">${s.ticker}</div>
       <div class="sector-ticker">${s.name.split(' ').map(w=>w[0]).join('')}</div>
-      <div class="sector-perf" style="color:${perfTextColor(s.perf)}">${s.perf >= 0 ? '+' : ''}${s.perf.toFixed(1)}%</div>
-      <div class="sector-flow" style="color:${s.flow >= 0 ? '#22c55e' : '#ef4444'}">${s.flow >= 0 ? '▲' : '▼'} $${Math.abs(s.flow).toFixed(1)}B</div>
-    </div>
-  `).join('');
+      <div class="sector-perf" style="color:${perfTextColor(s.perf)}">${s.perf>=0?'+':''}${s.perf.toFixed(1)}%</div>
+      <div class="sector-flow" style="color:${s.flow>=0?'#22c55e':'#ef4444'}">${s.flow>=0?'▲':'▼'} $${Math.abs(s.flow).toFixed(1)}B</div>
+    </div>`).join('');
 }
 
-function buildMacro() {
-  const el = document.getElementById('macroPanel');
-  const sigMap = {bull:'sig-bull',bear:'sig-bear',neut:'sig-neut'};
-  const sigLabel = {bull:'BULLISH',bear:'BEARISH',neut:'NEUTRAL'};
-  el.innerHTML = MACRO_DATA.map(m => `
+function buildMacro(){
+  const sigMap={bull:'sig-bull',bear:'sig-bear',neut:'sig-neut'};
+  const sigLabel={bull:'BULLISH',bear:'BEARISH',neut:'NEUTRAL'};
+  document.getElementById('macroPanel').innerHTML=MACRO_DATA.map(m=>`
     <div class="macro-row">
       <span class="macro-label"><i class="fa-solid ${m.icon}"></i>${m.label}</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="macro-val" style="color:${m.signal==='bull'?'#22c55e':m.signal==='bear'?'#ef4444':'#f59e0b'}">${m.value}</span>
         <span class="macro-signal ${sigMap[m.signal]}">${sigLabel[m.signal]}</span>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function buildRotations() {
-  const tbody = document.getElementById('rotationTable');
-  tbody.innerHTML = ROTATIONS.map((r, i) => {
-    const probColor = r.prob >= 70 ? '#22c55e' : r.prob >= 55 ? '#f59e0b' : '#8892a4';
-    return `<tr onclick="openRotationModal(${i})">
-      <td>
-        <div class="from-to">
-          <span class="sector-tag" style="background:${r.fromColor}22;color:${r.fromColor};border:0.5px solid ${r.fromColor}44">${r.from}</span>
-          <span class="arrow-icon">→</span>
-          <span class="sector-tag" style="background:${r.toColor}22;color:${r.toColor};border:0.5px solid ${r.toColor}44">${r.to}</span>
-        </div>
-      </td>
-      <td>
-        <div class="prob-text" style="color:${probColor}">${r.prob}%</div>
-        <div class="prob-bar"><div class="prob-fill" style="width:${r.prob}%;background:${probColor}"></div></div>
-      </td>
+function buildRotations(){
+  document.getElementById('rotationTable').innerHTML=ROTATIONS.map((r,i)=>{
+    const pc=r.prob>=70?'#22c55e':r.prob>=55?'#f59e0b':'#8892a4';
+    return`<tr onclick="openRotationModal(${i})">
+      <td><div class="from-to">
+        <span class="sector-tag" style="background:${r.fromColor}22;color:${r.fromColor};border:0.5px solid ${r.fromColor}44">${r.from}</span>
+        <span class="arrow-icon">→</span>
+        <span class="sector-tag" style="background:${r.toColor}22;color:${r.toColor};border:0.5px solid ${r.toColor}44">${r.to}</span>
+      </div></td>
+      <td><div class="prob-text" style="color:${pc}">${r.prob}%</div><div class="prob-bar"><div class="prob-fill" style="width:${r.prob}%;background:${pc}"></div></div></td>
       <td><span class="upside-val">${r.upside}</span></td>
       <td><span class="date-val">${r.date}</span></td>
       <td style="font-size:10px;color:var(--text2);max-width:140px;line-height:1.4">${r.catalyst}</td>
@@ -615,9 +772,8 @@ function buildRotations() {
   }).join('');
 }
 
-function buildTopPicks() {
-  const el = document.getElementById('topPicks');
-  el.innerHTML = TOP_PICKS.map((p, i) => `
+function buildTopPicks(){
+  document.getElementById('topPicks').innerHTML=TOP_PICKS.map((p,i)=>`
     <div class="pick-row">
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="pick-rank">#${i+1}</span>
@@ -631,37 +787,27 @@ function buildTopPicks() {
         <div class="pick-upside">${p.upside}</div>
         <div class="pick-score">SCORE ${p.score}/100</div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function buildFlows() {
-  const el = document.getElementById('flowPanel');
-  const flows = SECTORS.slice(0,6).map(s => ({name:s.ticker, val:s.flow, color:s.color}));
-  const maxAbs = Math.max(...flows.map(f=>Math.abs(f.val)));
-  el.innerHTML = flows.map(f => {
-    const pct = (Math.abs(f.val)/maxAbs*100).toFixed(0);
-    const pos = f.val >= 0;
-    return `<div class="flow-item">
-      <div class="flow-header">
-        <span class="flow-sector">${f.name}</span>
-        <span class="flow-amount" style="color:${pos?'#22c55e':'#ef4444'}">${pos?'+':''}\$${f.val.toFixed(2)}B</span>
-      </div>
-      <div class="flow-bar-bg">
-        <div class="flow-bar" style="width:${pct}%;background:${pos?'#22c55e':'#ef4444'}"></div>
-      </div>
+function buildFlows(){
+  const flows=SECTORS.slice(0,6).map(s=>({name:s.ticker,val:s.flow,color:s.color}));
+  const maxAbs=Math.max(...flows.map(f=>Math.abs(f.val)));
+  document.getElementById('flowPanel').innerHTML=flows.map(f=>{
+    const pct=(Math.abs(f.val)/maxAbs*100).toFixed(0);
+    const pos=f.val>=0;
+    return`<div class="flow-item">
+      <div class="flow-header"><span class="flow-sector">${f.name}</span><span class="flow-amount" style="color:${pos?'#22c55e':'#ef4444'}">${pos?'+':''}\$${f.val.toFixed(2)}B</span></div>
+      <div class="flow-bar-bg"><div class="flow-bar" style="width:${pct}%;background:${pos?'#22c55e':'#ef4444'}"></div></div>
     </div>`;
   }).join('');
 }
 
-function buildGauges() {
-  const el = document.getElementById('gaugeGrid');
-  const picked = [0,1,2,3,4,5,6,7];
-  el.innerHTML = SECTORS.slice(0,8).map((s,i) => {
-    const rsi = s.rsi;
-    const color = rsi > 70 ? '#ef4444' : rsi < 30 ? '#22c55e' : rsi > 60 ? '#f59e0b' : '#3b82f6';
-    const label = rsi > 70 ? 'OVERBOUGHT' : rsi < 30 ? 'OVERSOLD' : rsi > 55 ? 'BULLISH' : 'NEUTRAL';
-    return `<div class="gauge-item">
+function buildGauges(){
+  document.getElementById('gaugeGrid').innerHTML=SECTORS.slice(0,8).map(s=>{
+    const rsi=s.rsi,color=rsi>70?'#ef4444':rsi<30?'#22c55e':rsi>60?'#f59e0b':'#3b82f6';
+    const label=rsi>70?'OVERBOUGHT':rsi<30?'OVERSOLD':rsi>55?'BULLISH':'NEUTRAL';
+    return`<div class="gauge-item">
       <div class="gauge-label">${s.ticker}</div>
       <div class="gauge-val" style="color:${color}">${rsi.toFixed(0)}</div>
       <div class="gauge-sub" style="color:${color}">${label}</div>
@@ -669,245 +815,115 @@ function buildGauges() {
   }).join('');
 }
 
-function buildCycleSvg() {
-  const svg = document.getElementById('cycleSvg');
-  const cx=120, cy=120, r=90;
-  const phases = [
-    {label:'Recovery', sectors:'Fin, Tech', angle:-135, color:'#22c55e'},
-    {label:'Early Exp.', sectors:'Disc, Mat', angle:-45, color:'#3b82f6'},
-    {label:'Mid Exp.', sectors:'Tech, Ind', angle:45, color:'#a78bfa'},
-    {label:'Late Exp.', sectors:'Energy, Mat', angle:135, color:'#f59e0b'},
-    {label:'Recession', sectors:'Health, Util', angle:180, color:'#ef4444'},
+function buildCycleSvg(){
+  const svg=document.getElementById('cycleSvg');
+  const cx=120,cy=120,r=88;
+  const phases=[
+    {label:'Recovery',sectors:'Fin, Tech',angle:-135,color:'#22c55e'},
+    {label:'Early Exp.',sectors:'Disc, Mat',angle:-45,color:'#3b82f6'},
+    {label:'Mid Exp.',sectors:'Tech, Ind',angle:45,color:'#a78bfa'},
+    {label:'Late Exp.',sectors:'Energy, Mat',angle:135,color:'#f59e0b'},
+    {label:'Recession',sectors:'Health, Util',angle:180,color:'#ef4444'},
   ];
-  const currentPhase = 2;
-
-  let html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="40"/>`;
-  html += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
-
-  phases.forEach((p, i) => {
-    const rad = (p.angle - 90) * Math.PI / 180;
-    const tx = cx + (r) * Math.cos(rad);
-    const ty = cy + (r) * Math.sin(rad);
-    const dotR = i === currentPhase ? 8 : 5;
-    const opacity = i === currentPhase ? 1 : 0.4;
-    html += `<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${dotR}" fill="${p.color}" opacity="${opacity}"/>`;
-    if (i === currentPhase) {
-      html += `<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="14" fill="${p.color}" opacity="0.15"/>`;
-    }
-    const lx = cx + (r+0) * Math.cos(rad) * 1.28;
-    const ly = cy + (r+0) * Math.sin(rad) * 1.28;
-    html += `<text x="${lx.toFixed(1)}" y="${(ly-4).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="${p.color}" opacity="${opacity}">${p.label}</text>`;
-    html += `<text x="${lx.toFixed(1)}" y="${(ly+8).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="rgba(255,255,255,0.3)">${p.sectors}</text>`;
+  const cur=2;
+  let h=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="38"/>`;
+  phases.forEach((p,i)=>{
+    const rad=(p.angle-90)*Math.PI/180;
+    const tx=cx+r*Math.cos(rad),ty=cy+r*Math.sin(rad);
+    const dotR=i===cur?8:5,op=i===cur?1:0.4;
+    h+=`<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${dotR}" fill="${p.color}" opacity="${op}"/>`;
+    if(i===cur)h+=`<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="14" fill="${p.color}" opacity="0.15"/>`;
+    const lx=cx+r*Math.cos(rad)*1.3,ly=cy+r*Math.sin(rad)*1.3;
+    h+=`<text x="${lx.toFixed(1)}" y="${(ly-4).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="${p.color}" opacity="${op}">${p.label}</text>`;
+    h+=`<text x="${lx.toFixed(1)}" y="${(ly+8).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="rgba(255,255,255,0.3)">${p.sectors}</text>`;
   });
-
-  html += `<text x="${cx}" y="${cy-6}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Mid</text>`;
-  html += `<text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Expansion</text>`;
-  svg.innerHTML = html;
+  h+=`<text x="${cx}" y="${cy-5}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Mid</text>`;
+  h+=`<text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Expansion</text>`;
+  svg.innerHTML=h;
 }
 
-const RS_DATA = {
-  labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
-};
-
-function buildRsChart() {
-  const s = SECTORS[selectedSector];
-  const data = Array.from({length:12}, () => rand(-8,8));
-
-  if (rsChart) rsChart.destroy();
-  rsChart = new Chart(document.getElementById('rsChart'), {
-    type: 'line',
-    data: {
-      labels: RS_DATA.labels,
-      datasets: [{
-        label: `${s.ticker} vs SPY`,
-        data: data,
-        borderColor: s.color,
-        backgroundColor: s.color + '18',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: s.color,
-        borderWidth: 2,
-        borderDash: [],
-      },{
-        label: 'Zero line',
-        data: Array(12).fill(0),
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 1,
-        borderDash: [4,4],
-        pointRadius: 0,
-        fill: false,
-      }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false} },
-      scales: {
-        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}} },
-        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}, callback: v => v+'%'} }
-      }
-    }
+function buildRsChart(){
+  const s=SECTORS[selectedSector];
+  const data=Array.from({length:12},()=>rand(-8,8));
+  if(rsChart)rsChart.destroy();
+  rsChart=new Chart(document.getElementById('rsChart'),{type:'line',data:{
+    labels:['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+    datasets:[
+      {label:`${s.ticker} vs SPY`,data,borderColor:s.color,backgroundColor:s.color+'18',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:s.color,borderWidth:2},
+      {label:'Zero',data:Array(12).fill(0),borderColor:'rgba(255,255,255,0.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v+'%'}}
+    }}
   });
 }
 
-function buildBreadthChart() {
-  const labels = SECTORS.map(s => s.ticker);
-  const data = SECTORS.map(s => s.breadth);
-  const colors = SECTORS.map(s => s.breadth > 60 ? '#22c55e' : s.breadth < 40 ? '#ef4444' : '#3b82f6');
-
-  if (breadthChart) breadthChart.destroy();
-  breadthChart = new Chart(document.getElementById('breadthChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: '% Above 50DMA',
-        data,
-        backgroundColor: colors,
-        borderRadius: 3,
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false} },
-      scales: {
-        x: { grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:8},maxRotation:0} },
-        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}, callback: v=>v+'%'}, min:0, max:100,
-          afterDrawn: chart => {} }
-      }
-    }
+function buildBreadthChart(){
+  const labels=SECTORS.map(s=>s.ticker),data=SECTORS.map(s=>s.breadth);
+  const colors=SECTORS.map(s=>s.breadth>60?'#22c55e':s.breadth<40?'#ef4444':'#3b82f6');
+  if(breadthChart)breadthChart.destroy();
+  breadthChart=new Chart(document.getElementById('breadthChart'),{type:'bar',data:{labels,datasets:[{label:'% Above 50DMA',data,backgroundColor:colors,borderRadius:3,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:8},maxRotation:0}},
+    y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v+'%'},min:0,max:100}}}
   });
 }
 
-function buildPcChart() {
-  const labels = SECTORS.slice(0,7).map(s=>s.ticker);
-  const data = labels.map(() => rand(0.6, 1.4));
-  const colors = data.map(v => v > 1.0 ? '#ef4444' : '#22c55e');
-
-  if (pcChart) pcChart.destroy();
-  pcChart = new Chart(document.getElementById('pcChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Put/Call Ratio',
-        data: data.map(v => parseFloat(v.toFixed(2))),
-        backgroundColor: colors,
-        borderRadius: 3, borderWidth: 0,
-      },{
-        label: 'Neutral (1.0)',
-        data: Array(7).fill(1.0),
-        borderColor: 'rgba(255,255,255,0.25)',
-        borderWidth: 1,
-        borderDash: [3,3],
-        type: 'line',
-        pointRadius: 0,
-        fill: false,
-      }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{display:false} },
-      scales: {
-        x: { grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}} },
-        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v.toFixed(1)}, min:0.4, max:1.6 }
-      }
-    }
+function buildPcChart(){
+  const labels=SECTORS.slice(0,7).map(s=>s.ticker);
+  const data=labels.map(()=>rand(0.6,1.4));
+  const colors=data.map(v=>v>1.0?'#ef4444':'#22c55e');
+  if(pcChart)pcChart.destroy();
+  pcChart=new Chart(document.getElementById('pcChart'),{type:'bar',data:{labels,datasets:[
+    {label:'Put/Call',data:data.map(v=>parseFloat(v.toFixed(2))),backgroundColor:colors,borderRadius:3,borderWidth:0},
+    {label:'Neutral',data:Array(7).fill(1.0),borderColor:'rgba(255,255,255,0.25)',borderWidth:1,borderDash:[3,3],type:'line',pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+  scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}}},
+  y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v.toFixed(1)},min:0.4,max:1.6}}}
   });
 }
 
-function buildRsTabs() {
-  const tabsEl = document.getElementById('rsChartTabs');
-  tabsEl.innerHTML = SECTORS.slice(0,6).map((s,i) =>
+function buildRsTabs(){
+  document.getElementById('rsChartTabs').innerHTML=SECTORS.slice(0,6).map((s,i)=>
     `<button class="chart-tab ${i===selectedSector?'active':''}" onclick="selectSector(${i})">${s.ticker}</button>`
   ).join('');
 }
 
-function selectSector(i) {
-  selectedSector = i;
-  buildSectorGrid();
-  buildRsTabs();
-  buildRsChart();
-}
+function selectSector(i){selectedSector=i;buildSectorGrid();buildRsTabs();buildRsChart();}
 
-function openRotationModal(i) {
-  const r = ROTATIONS[i];
-  const modal = document.getElementById('modalContent');
-  modal.innerHTML = `
+function openRotationModal(i){
+  const r=ROTATIONS[i];
+  document.getElementById('modalContent').innerHTML=`
     <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
     <div class="modal-title">${r.from} → ${r.to}</div>
     <div class="modal-sub">ROTATION SIGNAL · ${r.date}</div>
     <div class="modal-grid">
-      <div class="modal-stat">
-        <div class="modal-stat-label">PROBABILITY</div>
-        <div class="modal-stat-val" style="color:${r.prob>=70?'#22c55e':r.prob>=55?'#f59e0b':'#8892a4'}">${r.prob}%</div>
-      </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">EXPECTED UPSIDE</div>
-        <div class="modal-stat-val" style="color:#22c55e">${r.upside}</div>
-      </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">EXPECTED DATE</div>
-        <div class="modal-stat-val" style="font-size:13px;padding-top:4px">${r.date}</div>
-      </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">CATALYST</div>
-        <div class="modal-stat-val" style="font-size:11px;padding-top:4px;line-height:1.5">${r.catalyst}</div>
-      </div>
+      <div class="modal-stat"><div class="modal-stat-label">PROBABILITY</div><div class="modal-stat-val" style="color:${r.prob>=70?'#22c55e':r.prob>=55?'#f59e0b':'#8892a4'}">${r.prob}%</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">EXPECTED UPSIDE</div><div class="modal-stat-val" style="color:#22c55e">${r.upside}</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">EXPECTED DATE</div><div class="modal-stat-val" style="font-size:13px;padding-top:4px">${r.date}</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">CATALYST</div><div class="modal-stat-val" style="font-size:11px;padding-top:4px;line-height:1.5">${r.catalyst}</div></div>
     </div>
     <div class="modal-picks-title">TOP STOCK PICKS</div>
-    <div class="modal-picks">
-      ${r.picks.map(p=>`<span class="modal-pick-chip">${p}</span>`).join('')}
-    </div>
-    <div class="modal-rationale">${r.rationale}</div>
-  `;
+    <div class="modal-picks">${r.picks.map(p=>`<span class="modal-pick-chip">${p}</span>`).join('')}</div>
+    <div class="modal-rationale">${r.rationale}</div>`;
   document.getElementById('modalOverlay').classList.add('open');
 }
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function updateClock(){document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})+' ET';}
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
+function refreshAll(){
+  generateSectorData();buildSectorGrid();buildFlows();buildGauges();buildRsChart();buildBreadthChart();buildPcChart();
 }
 
-function updateClock() {
-  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}) + ' ET';
-}
-
-function refreshAll() {
-  generateSectorData();
-  buildSectorGrid();
-  buildFlows();
-  buildGauges();
-  buildRsChart();
-  buildBreadthChart();
-  buildPcChart();
-}
-
-function init() {
-  generateSectorData();
-  buildTicker();
-  buildSectorGrid();
-  buildMacro();
-  buildRotations();
-  buildTopPicks();
-  buildFlows();
-  buildGauges();
-  buildCycleSvg();
-  buildRsTabs();
-  buildRsChart();
-  buildBreadthChart();
-  buildPcChart();
+function init(){
+  generateSectorData();buildTicker();buildSectorGrid();buildMacro();buildRotations();buildTopPicks();
+  buildFlows();buildGauges();buildCycleSvg();buildRsTabs();buildRsChart();buildBreadthChart();buildPcChart();
   updateClock();
-  setInterval(updateClock, 1000);
-  setInterval(() => {
-    generateSectorData();
-    buildSectorGrid();
-    buildFlows();
-    buildGauges();
-  }, 30000);
+  setInterval(updateClock,1000);
+  setInterval(()=>{generateSectorData();buildSectorGrid();buildFlows();buildGauges();},30000);
 }
-
-window.onload = init;
+window.onload=init;
 </script>
 </body>
 </html>
