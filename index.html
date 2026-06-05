@@ -64,22 +64,26 @@
   /* TOOLTIP POPUP */
   .tip-popup{
     display:none;position:fixed;z-index:500;
-    width:300px;
+    width:320px;max-height:82vh;
     background:#1a2035;border:0.5px solid rgba(59,130,246,0.3);
     border-radius:10px;padding:0;overflow:hidden;
     box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    flex-direction:column;
   }
-  .tip-popup.visible{display:block;}
+  .tip-popup.visible{display:flex;}
   .tip-popup-header{
     background:rgba(59,130,246,0.12);
     border-bottom:0.5px solid rgba(59,130,246,0.2);
-    padding:10px 14px;
+    padding:10px 14px;flex-shrink:0;
     display:flex;align-items:center;justify-content:space-between;
   }
   .tip-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--blue);}
   .tip-popup-close{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;line-height:1;}
   .tip-popup-close:hover{color:var(--text1);}
-  .tip-popup-body{padding:12px 14px;}
+  .tip-popup-body{padding:12px 14px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,0.3) transparent;}
+  .tip-popup-body::-webkit-scrollbar{width:4px;}
+  .tip-popup-body::-webkit-scrollbar-track{background:transparent;}
+  .tip-popup-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,0.3);border-radius:2px;}
   .tip-section{margin-bottom:10px;}
   .tip-section:last-child{margin-bottom:0;}
   .tip-section-label{
@@ -248,7 +252,7 @@
         <span class="panel-title">Sector Performance &amp; ETF Heatmap</span>
         <button class="tip-btn" onclick="showTip('heatmap',this)" title="Learn about this panel">?</button>
       </div>
-      <span class="panel-badge badge-blue" id="heatmapPeriod">1W</span>
+      <span class="panel-badge badge-blue" id="heatmapPeriod">WEEKLY</span>
     </div>
     <div class="sector-grid" id="sectorGrid"></div>
   </div>
@@ -290,7 +294,7 @@
             <span class="panel-title">ETF Fund Flows (5-Day)</span>
             <button class="tip-btn" onclick="showTip('flows',this)" title="Learn about this panel">?</button>
           </div>
-          <span class="panel-badge badge-green">$B</span>
+          <span class="panel-badge badge-green">5-DAY · $B</span>
         </div>
         <div class="panel-body" id="flowPanel"></div>
       </div>
@@ -328,6 +332,7 @@
         </div>
         <div class="chart-container">
           <div class="chart-tabs" id="rsChartTabs"></div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:8px;letter-spacing:0.04em;">12-week window · each label = week ending that Friday · positive = outperforming S&P 500</div>
           <div style="position:relative;height:200px;">
             <canvas id="rsChart" role="img" aria-label="Relative strength of selected sector vs S&P 500 over 12 weeks"></canvas>
           </div>
@@ -725,12 +730,21 @@ function showTip(key,btn){
 }
 function positionTip(btn,popup){
   const r=btn.getBoundingClientRect();
-  const pw=300,ph=popup.scrollHeight||400;
+  const pw=320;
   const vw=window.innerWidth,vh=window.innerHeight;
-  let left=r.left,top=r.bottom+6;
+  // horizontal: prefer aligning left edge with button, push left if overflows right
+  let left=r.left;
   if(left+pw>vw-8)left=vw-pw-8;
   if(left<8)left=8;
-  if(top+ph>vh-8)top=r.top-ph-6;
+  // vertical: prefer below button; if not enough room below, anchor to top of viewport with margin
+  // popup has max-height:82vh so it will scroll internally — just make sure top is within view
+  const maxH=Math.floor(vh*0.82);
+  let top=r.bottom+6;
+  if(top+maxH>vh-8){
+    // try above button
+    top=r.top-maxH-6;
+  }
+  // final clamp: never above top of screen
   if(top<8)top=8;
   popup.style.left=left+'px';
   popup.style.top=top+'px';
@@ -875,12 +889,36 @@ function buildCycleSvg(){
   svg.innerHTML=h;
 }
 
+function getRsLabels(){
+  // Returns 12 weekly labels ending on the most recent Friday (week-close dates)
+  // Each label = "DD Mon" e.g. "08 May", representing the Friday that closed that week
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Use actual today's date from browser
+  const now=new Date();
+  // Find the most recent Friday (getDay: 0=Sun,1=Mon,...,5=Fri,6=Sat)
+  const dow=now.getDay();
+  // daysBack: how many days to go back to reach Friday
+  // Fri(5)->0, Sat(6)->1, Sun(0)->2, Mon(1)->3, Tue(2)->4, Wed(3)->5, Thu(4)->6
+  const daysBack=dow===5?0:dow===6?1:(dow+2)%7===0?2:dow+2;
+  // Simpler: offset table
+  const offsets=[2,3,4,5,6,0,1]; // Sun=0 -> 2, Mon=1 -> 3, ..., Fri=5 -> 0, Sat=6 -> 1
+  const lastFriday=new Date(now);
+  lastFriday.setDate(now.getDate()-offsets[dow]);
+  lastFriday.setHours(0,0,0,0);
+  const labels=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(lastFriday);
+    d.setDate(lastFriday.getDate()-(i*7));
+    labels.push(d.getDate()+' '+months[d.getMonth()]);
+  }
+  return labels;
+}
 function buildRsChart(){
   const s=SECTORS[selectedSector];
   const data=Array.from({length:12},()=>rand(-8,8));
   if(rsChart)rsChart.destroy();
   rsChart=new Chart(document.getElementById('rsChart'),{type:'line',data:{
-    labels:['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+    labels:getRsLabels(),
     datasets:[
       {label:`${s.ticker} vs SPY`,data,borderColor:s.color,backgroundColor:s.color+'18',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:s.color,borderWidth:2},
       {label:'Zero',data:Array(12).fill(0),borderColor:'rgba(255,255,255,0.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}
@@ -954,7 +992,8 @@ function init(){
   buildFlows();buildGauges();buildCycleSvg();buildRsTabs();buildRsChart();buildBreadthChart();buildPcChart();
   updateClock();
   setInterval(updateClock,1000);
-  setInterval(()=>{generateSectorData();buildSectorGrid();buildFlows();buildGauges();},30000);
+  // RSI gauges update every 30s (intraday signal); heatmap & flows are weekly — refresh manually
+  setInterval(()=>{},30000);
 }
 window.onload=init;
 </script>
