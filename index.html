@@ -175,7 +175,7 @@
 
   /* CHART */
   .chart-container{padding:14px;}
-  .chart-tabs{display:flex;gap:6px;margin-bottom:14px;}
+  .chart-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
   .chart-tab{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;background:transparent;border:0.5px solid var(--border2);color:var(--text2);transition:all 0.15s;}
   .chart-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
 
@@ -761,6 +761,7 @@ document.addEventListener('click',e=>{
 
 // ── DATA & BUILD FUNCTIONS ────────────────────────────────────────────────────
 let rsChart,breadthChart,pcChart,selectedSector=0;
+const rsDataCache={}; // keyed by ticker, so same tab always shows same line
 function rand(min,max,dec=1){return parseFloat((Math.random()*(max-min)+min).toFixed(dec));}
 
 function generateSectorData(){
@@ -915,7 +916,11 @@ function getRsLabels(){
 }
 function buildRsChart(){
   const s=SECTORS[selectedSector];
-  const data=Array.from({length:12},()=>rand(-8,8));
+  // Use cached data for this ticker so repeated clicks show the same chart
+  if(!rsDataCache[s.ticker]){
+    rsDataCache[s.ticker]=Array.from({length:12},()=>rand(-8,8));
+  }
+  const data=rsDataCache[s.ticker];
   if(rsChart)rsChart.destroy();
   rsChart=new Chart(document.getElementById('rsChart'),{type:'line',data:{
     labels:getRsLabels(),
@@ -956,7 +961,8 @@ function buildPcChart(){
 }
 
 function buildRsTabs(){
-  document.getElementById('rsChartTabs').innerHTML=SECTORS.slice(0,6).map((s,i)=>
+  // Show ALL 11 sectors, not just the first 6
+  document.getElementById('rsChartTabs').innerHTML=SECTORS.map((s,i)=>
     `<button class="chart-tab ${i===selectedSector?'active':''}" onclick="selectSector(${i})">${s.ticker}</button>`
   ).join('');
 }
@@ -984,6 +990,8 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 function updateClock(){document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})+' ET';}
 
 function refreshAll(){
+  // Clear RS cache so refresh genuinely re-pulls simulated data
+  Object.keys(rsDataCache).forEach(k=>delete rsDataCache[k]);
   generateSectorData();buildSectorGrid();buildFlows();buildGauges();buildRsChart();buildBreadthChart();buildPcChart();
 }
 
