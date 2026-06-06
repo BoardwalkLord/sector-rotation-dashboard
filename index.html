@@ -255,30 +255,54 @@
   .narrative-header-left{display:flex;align-items:center;gap:10px;}
   .narrative-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;}
   .narrative-model-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);}
+  .narrative-cost-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,0.08);border:0.5px solid rgba(34,197,94,0.25);color:var(--green);}
   .narrative-gen-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;padding:5px 14px;border-radius:20px;cursor:pointer;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);transition:all 0.15s;display:flex;align-items:center;gap:6px;}
   .narrative-gen-btn:hover:not(:disabled){background:rgba(167,139,250,0.2);}
   .narrative-gen-btn:disabled{opacity:0.45;cursor:not-allowed;}
-  .narrative-body{padding:18px 20px;}
+  .narrative-body{padding:16px 20px;}
   .narrative-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:12px;}
   .narrative-spinner{width:28px;height:28px;border:2px solid rgba(167,139,250,0.15);border-top:2px solid var(--purple);border-radius:50%;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .narrative-loading-text{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.08em;}
-  .narrative-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  .narrative-grid-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
-  .narrative-card{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:14px;}
-  .narrative-card.highlight{border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.06);}
-  .narrative-card-label{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-  .narrative-card-label i{font-size:10px;}
-  .narrative-card-text{font-size:12px;line-height:1.7;color:var(--text2);}
-  .narrative-card-text strong{color:var(--text1);font-weight:500;}
-  .narrative-card.highlight .narrative-card-text{color:var(--text1);}
-  .narrative-card.highlight .narrative-card-label{color:var(--purple);}
-  .narrative-card.final-rec{grid-column:1/-1;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.05);}
-  .narrative-card.final-rec .narrative-card-label{color:var(--green);}
-  .narrative-card.final-rec .narrative-card-text{font-size:13px;line-height:1.75;}
+
+  /* 7-card layout: 3 columns top row, 2+2 second row, full-width final */
+  .narrative-cards{display:flex;flex-direction:column;gap:10px;}
+  .narrative-row{display:grid;gap:10px;}
+  .narrative-row.row-3{grid-template-columns:repeat(3,1fr);}
+  .narrative-row.row-2{grid-template-columns:repeat(2,1fr);}
+  .narrative-row.row-1{grid-template-columns:1fr;}
+
+  .ncard{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ncard.accent-purple{border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.05);}
+  .ncard.accent-green{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);}
+
+  .ncard-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid var(--border);}
+  .ncard-icon{font-size:13px;}
+  .ncard-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;flex:1;}
+  .ncard-badge{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:10px;letter-spacing:0.05em;}
+  .badge-bull{background:rgba(34,197,94,0.12);color:var(--green);border:0.5px solid rgba(34,197,94,0.3);}
+  .badge-bear{background:rgba(239,68,68,0.12);color:var(--red);border:0.5px solid rgba(239,68,68,0.3);}
+  .badge-neut{background:rgba(245,158,11,0.12);color:var(--amber);border:0.5px solid rgba(245,158,11,0.3);}
+
+  .ncard-body{display:flex;flex-direction:column;gap:8px;}
+  .ncard-point{display:flex;gap:10px;align-items:flex-start;}
+  .ncard-bullet{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .ncard-text{font-size:12px;line-height:1.65;color:var(--text2);}
+  .ncard-text strong{color:var(--text1);font-weight:500;}
+  .ncard-text em{color:var(--amber);font-style:normal;}
+
+  /* Final recommendation card special styling */
+  .ncard-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .ncard-pick{background:var(--bg2);border:0.5px solid var(--border2);border-radius:6px;padding:8px 12px;min-width:160px;flex:1;}
+  .ncard-pick-ticker{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text1);margin-bottom:2px;}
+  .ncard-pick-reason{font-size:11px;color:var(--text2);line-height:1.5;}
+  .ncard-pick-upside{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:4px;}
+
+  .ncard-caveat{margin-top:12px;padding:8px 12px;background:rgba(245,158,11,0.07);border:0.5px solid rgba(245,158,11,0.2);border-radius:6px;font-size:11px;color:rgba(245,158,11,0.85);line-height:1.6;}
+
   .narrative-empty{text-align:center;padding:32px;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.7;}
   .narrative-empty i{font-size:24px;display:block;margin-bottom:12px;opacity:0.3;}
-  .narrative-error{text-align:center;padding:24px;font-family:var(--mono);font-size:11px;color:var(--red);background:rgba(239,68,68,0.06);border-radius:6px;margin:12px;}
+  .narrative-error{padding:16px 20px;font-family:var(--mono);font-size:11px;color:var(--red);background:rgba(239,68,68,0.06);border-radius:6px;}
 
   /* FOOTER */
   footer{margin-top:12px;padding:10px 20px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:space-between;}
@@ -517,6 +541,7 @@
         <span class="narrative-title">AI Market Narrative</span>
         <button class="tip-btn" onclick="showTip('narrative',this)" title="Learn about this panel">?</button>
         <span class="narrative-model-tag">CLAUDE · LIVE ANALYSIS</span>
+        <span class="narrative-cost-tag">~$0.01–0.02 per refresh</span>
       </div>
       <button class="narrative-gen-btn" id="narrativeBtn" onclick="generateNarrative()">
         <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS
@@ -634,57 +659,61 @@ function initApiKey(){
 // Claude fetches real market data using its web_search tool, then returns
 // structured JSON + narrative in one API call. No CORS issues, no API keys.
 
-function buildLiveDataPrompt(){
-  const sectorTickers = SECTORS.map(s=>s.ticker).join(',');
-  return `You are a market data assistant. Use web search to find current real market data, then return a JSON object followed by a narrative analysis.
+function buildNarrativePrompt(){
+  // Build a compact snapshot of dashboard state to send to Claude
+  const top3 = [...SECTORS].sort((a,b)=>b.perf-a.perf).slice(0,3).map(s=>`${s.ticker} ${s.perf>=0?'+':''}${s.perf.toFixed(1)}%`).join(', ');
+  const bot3 = [...SECTORS].sort((a,b)=>a.perf-b.perf).slice(0,3).map(s=>`${s.ticker} ${s.perf.toFixed(1)}%`).join(', ');
+  const topFlow = [...SECTORS].sort((a,b)=>b.flow-a.flow).slice(0,3).map(s=>`${s.ticker} +$${s.flow.toFixed(1)}B`).join(', ');
+  const botFlow = [...SECTORS].sort((a,b)=>a.flow-b.flow).slice(0,3).map(s=>`${s.ticker} -$${Math.abs(s.flow).toFixed(1)}B`).join(', ');
+  const overbought = SECTORS.filter(s=>s.rsi>65).map(s=>`${s.ticker} RSI:${s.rsi.toFixed(0)}`).join(', ')||'none';
+  const oversold = SECTORS.filter(s=>s.rsi<40).map(s=>`${s.ticker} RSI:${s.rsi.toFixed(0)}`).join(', ')||'none';
+  const goodBreadth = SECTORS.filter(s=>s.breadth>60).map(s=>`${s.ticker} ${s.breadth.toFixed(0)}%`).join(', ')||'none';
+  const weakBreadth = SECTORS.filter(s=>s.breadth<40).map(s=>`${s.ticker} ${s.breadth.toFixed(0)}%`).join(', ')||'none';
+  const macro = MACRO_DATA.map(m=>`${m.label}:${m.value}(${m.signal})`).join(' | ');
+  const rotTop = ROTATIONS.slice(0,3).map(r=>`${r.from}→${r.to} ${r.prob}% prob ${r.upside} upside`).join('; ');
+  const picks = TOP_PICKS.slice(0,5).map(p=>`${p.ticker}(${p.sector},score:${p.score},upside:${p.upside},thesis:${p.reason})`).join('; ');
+  const cycle = document.getElementById('cycleLabel').textContent;
 
-STEP 1 — Search for and retrieve these exact data points (use web search for current values):
-- Weekly % price change (last 5 trading days) for these ETFs: XLK, XLE, XLF, XLV, XLI, XLP, XLY, XLU, XLRE, XLB, XLC, SPY, QQQ
-- Current values: US Fed Funds Rate, US 10Y-2Y Treasury yield spread, VIX index, CPI YoY %, WTI Crude Oil price, US Dollar Index (DXY)
-- Weekly RS (relative strength vs SPY, last 12 weeks) for: XLK, XLE, XLF, XLV, XLI, XLP (as array of 12 weekly % outperformance values)
+  return `You are a market analyst writing a sector rotation briefing for a BEGINNER investor who is learning. The data below comes from a dashboard showing SIMULATED market data (not real). Make this clear once at the start of the macro card only, then write naturally.
 
-STEP 2 — Return ONLY this exact JSON structure (no markdown, no backticks, no extra text before the JSON):
+DASHBOARD DATA:
+Cycle: ${cycle}
+Macro: ${macro}
+Heatmap top: ${top3} | bottom: ${bot3}
+Flows in: ${topFlow} | out: ${botFlow}
+RSI overbought: ${overbought} | oversold: ${oversold}
+Breadth strong: ${goodBreadth} | weak: ${weakBreadth}
+Rotations: ${rotTop}
+Top picks: ${picks}
+
+Return ONLY valid JSON (no markdown, no backticks). Use this exact structure:
 {
-  "asOf": "YYYY-MM-DD",
-  "etfWeeklyPct": {
-    "XLK": 0.0, "XLE": 0.0, "XLF": 0.0, "XLV": 0.0, "XLI": 0.0,
-    "XLP": 0.0, "XLY": 0.0, "XLU": 0.0, "XLRE": 0.0, "XLB": 0.0, "XLC": 0.0,
-    "SPY": 0.0, "QQQ": 0.0
-  },
-  "etfPrices": {
-    "XLK": 0.0, "XLE": 0.0, "XLF": 0.0, "XLV": 0.0, "XLI": 0.0,
-    "XLP": 0.0, "XLY": 0.0, "XLU": 0.0, "XLRE": 0.0, "XLB": 0.0, "XLC": 0.0,
-    "SPY": 0.0, "QQQ": 0.0
-  },
-  "macro": {
-    "fedFunds": 0.0,
-    "yieldSpread10y2y": 0.0,
-    "vix": 0.0,
-    "cpiYoY": 0.0,
-    "wtiCrude": 0.0,
-    "dxy": 0.0
-  },
-  "rsHistory": {
-    "XLK": [0,0,0,0,0,0,0,0,0,0,0,0],
-    "XLE": [0,0,0,0,0,0,0,0,0,0,0,0],
-    "XLF": [0,0,0,0,0,0,0,0,0,0,0,0],
-    "XLV": [0,0,0,0,0,0,0,0,0,0,0,0],
-    "XLI": [0,0,0,0,0,0,0,0,0,0,0,0],
-    "XLP": [0,0,0,0,0,0,0,0,0,0,0,0]
-  },
-  "narrative": {
-    "macro": "3-5 sentence paragraph about the macro environment based on the data.",
-    "heatmap": "3-5 sentence paragraph about sector performance patterns.",
-    "flows": "3-5 sentence paragraph about ETF fund flow implications (note: flow data is simulated).",
-    "breadth": "3-5 sentence paragraph about market breadth and RSI (note: breadth/RSI are simulated).",
-    "options": "3-5 sentence paragraph about options sentiment (note: put/call data is simulated).",
-    "rotation": "3-5 sentence paragraph about the most likely rotation opportunities given current data.",
-    "recommendation": "3-5 sentence paragraph with 3-4 specific stock picks with tickers, reasoning from multiple signals, time horizon, and one risk caveat."
-  }
+  "macro":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["short plain-english sentence","short plain-english sentence","short plain-english sentence"]},
+  "heatmap":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
+  "flows":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
+  "breadth":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
+  "options":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
+  "rotation": {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
+  "picks": [
+    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"One plain-english sentence — what signal supports this pick and why a beginner should care."},
+    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."},
+    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."}
+  ],
+  "caveat": "One honest sentence about the biggest risk or limitation of this analysis."
 }
 
-Fill every field with real searched data. For rsHistory, each array represents weekly outperformance vs SPY over the past 12 weeks (positive = outperforming, negative = underperforming). If a value cannot be found, use your best estimate based on recent knowledge and mark asOf accordingly. Return ONLY the JSON object, nothing else.`;
+WRITING RULES — strictly follow these:
+- Each "points" array must have EXACTLY 3 items.
+- Each point is ONE short sentence (max 20 words). Plain English. No jargon without explanation.
+- Write as if explaining to someone who just started investing. Avoid: "confluence", "headwinds", "tailwinds", "nuanced", "robust".
+- Use plain words: instead of "elevated VIX", say "the fear gauge is high, meaning investors are nervous".
+- The "signal" field summarises the overall tone of that card in one word.
+- "picks" must have EXACTLY 3 entries.
+- "caveat" is one sentence, max 25 words, honest about data being simulated.`;
 }
+
+// Keep buildLiveDataPrompt as alias (used in tryFetchLiveData which is now disabled)
+function buildLiveDataPrompt(){ return buildNarrativePrompt(); }
 
 function macroSignal(key, value){
   if(key==='fedFunds')          return value > 4 ? 'bear' : value > 2 ? 'neut' : 'bull';
@@ -1457,14 +1486,8 @@ async function callClaude(payload){
   return data;
 }
 
-// ── Build a simple narrative-only prompt from current dashboard state ─────────
-function buildNarrativeOnlyPrompt(){
-  const snap = buildDashboardSnapshot();
-  return snap + `
-
-IMPORTANT: Do NOT use web search. Use only the data provided above.
-Write the 7 paragraphs as instructed. Return plain text only — no JSON, no markdown, no code blocks.`;
-}
+// buildNarrativeOnlyPrompt — uses same structured prompt
+function buildNarrativeOnlyPrompt(){ return buildNarrativePrompt(); }
 
 // ── Try to fetch live market data via web search, return parsed JSON or null ──
 async function tryFetchLiveData(bodyEl){
@@ -1504,92 +1527,51 @@ async function generateNarrative(){
   const btn  = document.getElementById('narrativeBtn');
   const body = document.getElementById('narrativeBody');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ANALYSING...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> WRITING ANALYSIS...';
 
-  // Guard: need API key
   if(!anthropicApiKey){
-    body.innerHTML = `<div class="narrative-empty">
-      <i class="fa-solid fa-key"></i>
-      Enter your Anthropic API key in the panel above to generate analysis.
-    </div>`;
-    btn.disabled=false;
-    btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS';
+    body.innerHTML = `<div class="narrative-empty"><i class="fa-solid fa-key"></i>Enter your Anthropic API key above to generate analysis.</div>`;
+    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS';
     return;
   }
 
-  body.innerHTML = `<div class="narrative-loading">
-    <div class="narrative-spinner"></div>
-    <div class="narrative-loading-text">Connecting to Claude API…</div>
-  </div>`;
+  body.innerHTML = `<div class="narrative-loading"><div class="narrative-spinner"></div><div class="narrative-loading-text">Claude is reading the dashboard and writing your briefing…</div></div>`;
 
   try {
-    // ── Phase 1: Attempt live data fetch (gracefully skipped if web_search unavailable) ──
-    const loadingText = body.querySelector('.narrative-loading-text');
-    let liveData = null;
-    try { liveData = await tryFetchLiveData(body); } catch(e){}
+    // Single cheap API call — no web search tools, just text generation
+    const data = await callClaude({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1200,
+      messages: [{role:'user', content: buildNarrativePrompt()}]
+    });
 
-    if(liveData && !liveData._rawNarrative){
-      // Apply live market data to panels
-      applyLiveData(liveData);
-      updateDataStatusLive(liveData);
-      generateSectorData();
-      buildSectorGrid(); buildTicker(); buildMacro();
-      buildFlows(); buildGauges(); buildBreadthChart(); buildPcChart(); buildRsChart();
+    const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+
+    // Parse JSON — strip any accidental markdown fences first
+    const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    let parsed;
+    try { parsed = JSON.parse(cleaned); }
+    catch(e){
+      // Try to extract JSON object from within the text
+      const m = cleaned.match(/\{[\s\S]+\}/);
+      if(m) parsed = JSON.parse(m[0]);
+      else throw new Error('Could not parse response as JSON. Raw: '+raw.substring(0,200));
     }
 
-    // ── Phase 2: Generate narrative (always runs) ──────────────────────────
-    if(loadingText) loadingText.textContent = 'Step 2/2 — Writing market analysis…';
-
-    let narrativeText = '';
-    if(liveData?._rawNarrative){
-      narrativeText = liveData._rawNarrative;
-    } else if(liveData?.narrative){
-      // Already have narrative from Phase 1 JSON
-      const n = liveData.narrative;
-      const cards = [
-        {meta:PARA_META[0], text:n.macro||''},
-        {meta:PARA_META[1], text:n.heatmap||''},
-        {meta:PARA_META[2], text:n.flows||''},
-        {meta:PARA_META[3], text:n.breadth||''},
-        {meta:PARA_META[4], text:n.options||''},
-        {meta:PARA_META[5], text:n.rotation||''},
-        {meta:PARA_META[6], text:n.recommendation||''},
-      ].filter(c=>c.text);
-      renderCards(cards);
-      return; // done
-    } else {
-      // No live data or web_search unavailable — call Claude for narrative only
-      const data2 = await callClaude({
-        model:'claude-sonnet-4-6',
-        max_tokens:2000,
-        messages:[{role:'user', content: buildNarrativeOnlyPrompt()}]
-      });
-      narrativeText = (data2.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
-      if(!narrativeText) throw new Error('Empty response from API — check your account has credits.');
-    }
-
-    renderNarrative(narrativeText);
+    renderStructuredCards(parsed);
 
   } catch(err){
-    // Show the FULL error visibly so user knows exactly what's wrong
     const errMsg = err.message || String(err);
-    updateDataStatusError(errMsg);
-    body.innerHTML = `
-      <div style="padding:20px;">
-        <div class="narrative-error" style="text-align:left;padding:14px 16px;">
-          <div style="font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:8px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> &nbsp;API Error
-          </div>
-          <div style="font-size:12px;line-height:1.6;color:var(--text2);">${errMsg}</div>
-          <div style="margin-top:12px;font-size:10px;color:var(--text3);font-family:var(--mono);">
-            Common fixes:<br>
-            · <strong style="color:var(--text2)">401/403</strong> — Key is wrong or expired. Click CLEAR KEY above and re-enter.<br>
-            · <strong style="color:var(--text2)">529 / overloaded</strong> — Anthropic servers busy. Wait 30s and retry.<br>
-            · <strong style="color:var(--text2)">credit_balance_too_low</strong> — Add credits at console.anthropic.com/settings/billing<br>
-            · <strong style="color:var(--text2)">CORS / network error</strong> — Try opening the file via a local server, not file://
-          </div>
-        </div>
-      </div>`;
+    body.innerHTML = `<div class="narrative-error">
+      <div style="color:var(--red);margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Error generating analysis</div>
+      <div style="color:var(--text2);font-size:11px;line-height:1.7;">${errMsg}</div>
+      <div style="margin-top:10px;color:var(--text3);font-size:10px;">
+        Common fixes:<br>
+        · <b style="color:var(--text2)">401/403</b> — Key wrong or expired. Clear and re-enter.<br>
+        · <b style="color:var(--text2)">529</b> — Servers busy. Wait 30s and retry.<br>
+        · <b style="color:var(--text2)">credit_balance_too_low</b> — Add credits at console.anthropic.com/settings/billing
+      </div>
+    </div>`;
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> REGENERATE';
@@ -1641,6 +1623,70 @@ function renderNarrative(raw){
   }
 
   renderCards(cards);
+}
+
+function renderStructuredCards(d){
+  const body = document.getElementById('narrativeBody');
+  const signalBadge = s => {
+    const cl = s==='BULLISH'||s==='BULL' ? 'badge-bull' : s==='BEARISH'||s==='BEAR' ? 'badge-bear' : 'badge-neut';
+    return `<span class="ncard-badge ${cl}">${s}</span>`;
+  };
+  const bulletColor = s => s==='BULLISH'||s==='BULL' ? '#22c55e' : s==='BEARISH'||s==='BEAR' ? '#ef4444' : '#f59e0b';
+
+  const panelMeta = [
+    {key:'macro',    icon:'🏛', title:'Macro Environment'},
+    {key:'heatmap',  icon:'🌡', title:'Sector Heatmap'},
+    {key:'flows',    icon:'💰', title:'Fund Flows'},
+    {key:'breadth',  icon:'📊', title:'Market Breadth & RSI'},
+    {key:'options',  icon:'🎯', title:'Options Sentiment'},
+    {key:'rotation', icon:'🔄', title:'Rotation Signals'},
+  ];
+
+  function infoCard(meta){
+    const p = d[meta.key];
+    if(!p||!p.points) return '';
+    const pts = p.points.map(pt=>`
+      <div class="ncard-point">
+        <div class="ncard-bullet" style="background:${bulletColor(p.signal)}"></div>
+        <div class="ncard-text">${pt}</div>
+      </div>`).join('');
+    return `<div class="ncard">
+      <div class="ncard-header">
+        <span class="ncard-icon">${meta.icon}</span>
+        <span class="ncard-title">${meta.title}</span>
+        ${signalBadge(p.signal||'NEUTRAL')}
+      </div>
+      <div class="ncard-body">${pts}</div>
+    </div>`;
+  }
+
+  // Rows: 3 + 3 info cards, then picks row, then caveat
+  const row1 = panelMeta.slice(0,3).map(infoCard).join('');
+  const row2 = panelMeta.slice(3,6).map(infoCard).join('');
+
+  // Picks cards
+  const picks = (d.picks||[]).slice(0,3).map(p=>`
+    <div class="ncard-pick">
+      <div class="ncard-pick-ticker">${p.ticker} <span style="font-size:11px;font-weight:400;color:var(--text2)">${p.name||''}</span></div>
+      <div class="ncard-pick-reason">${p.reason||''}</div>
+      <div class="ncard-pick-upside">${p.upside||''} · ${p.sector||''}</div>
+    </div>`).join('');
+
+  const caveat = d.caveat ? `<div class="ncard-caveat">⚠ ${d.caveat}</div>` : '';
+
+  body.innerHTML = `
+    <div class="narrative-cards">
+      <div class="narrative-row row-3">${row1}</div>
+      <div class="narrative-row row-3">${row2}</div>
+      <div class="ncard accent-purple">
+        <div class="ncard-header">
+          <span class="ncard-icon">⭐</span>
+          <span class="ncard-title">Top Stock Picks — Based on All Signals Above</span>
+        </div>
+        <div class="ncard-picks">${picks}</div>
+        ${caveat}
+      </div>
+    </div>`;
 }
 
 function renderCards(cards){
