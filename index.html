@@ -1,121 +1,1684 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>API Key Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SectorPulse — Rotation Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  body { font-family: monospace; background: #0a0c10; color: #e8ecf4; padding: 40px; max-width: 700px; }
-  h2 { color: #3b82f6; margin-bottom: 20px; }
-  input { width: 100%; padding: 10px; background: #161b26; border: 1px solid #333; color: #fff; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 10px; box-sizing: border-box; }
-  button { padding: 10px 20px; background: #3b82f6; border: none; color: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; margin-bottom: 10px; }
-  button:hover { background: #2563eb; }
-  #log { background: #161b26; border: 1px solid #333; border-radius: 6px; padding: 16px; margin-top: 20px; min-height: 200px; white-space: pre-wrap; font-size: 12px; line-height: 1.6; }
-  .ok  { color: #22c55e; }
-  .err { color: #ef4444; }
-  .info{ color: #f59e0b; }
+  :root {
+    --bg:#0a0c10;--bg2:#10141c;--bg3:#161b26;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text1:#e8ecf4;--text2:#8892a4;--text3:#4d5666;
+    --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;
+    --teal:#14b8a6;--purple:#a78bfa;--cyan:#22d3ee;
+    --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--serif:'Instrument Serif',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:13px;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0;}
+  .dashboard{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:16px;}
+
+  /* HEADER */
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;margin-bottom:16px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;}
+  .header-left{display:flex;align-items:center;gap:16px;}
+  .logo{font-family:var(--serif);font-size:22px;color:var(--text1);letter-spacing:-0.5px;}
+  .logo span{color:var(--blue);font-style:italic;}
+  .live-pill{display:flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:0.5px solid rgba(34,197,94,0.3);color:var(--green);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;}
+  .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .header-right{display:flex;align-items:center;gap:20px;}
+  .timestamp{font-family:var(--mono);font-size:11px;color:var(--text3);}
+  .cycle-badge{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);}
+
+  /* GRID */
+  .main-grid{display:grid;grid-template-columns:300px 1fr 300px;gap:12px;}
+  .panel{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--bg3);}
+  .panel-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;}
+  .panel-header-left{display:flex;align-items:center;gap:8px;}
+  .panel-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:20px;letter-spacing:0.05em;}
+  .badge-amber{background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);color:var(--amber);}
+  .badge-blue{background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);}
+  .badge-green{background:rgba(34,197,94,0.1);border:0.5px solid rgba(34,197,94,0.3);color:var(--green);}
+  .badge-red{background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);color:var(--red);}
+  .badge-purple{background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);}
+  .panel-body{padding:12px 14px;}
+
+  /* TOOLTIP BUTTON */
+  .tip-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:16px;height:16px;border-radius:50%;
+    background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);
+    color:var(--text3);font-size:9px;cursor:pointer;flex-shrink:0;
+    font-family:var(--mono);font-weight:500;
+    transition:background 0.15s,color 0.15s,border-color 0.15s;
+    position:relative;
+  }
+  .tip-btn:hover{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4);color:var(--blue);}
+
+  /* TOOLTIP POPUP */
+  .tip-popup{
+    display:none;position:fixed;z-index:500;
+    width:320px;max-height:82vh;
+    background:#1a2035;border:0.5px solid rgba(59,130,246,0.3);
+    border-radius:10px;padding:0;overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    flex-direction:column;
+  }
+  .tip-popup.visible{display:flex;}
+  .tip-popup-header{
+    background:rgba(59,130,246,0.12);
+    border-bottom:0.5px solid rgba(59,130,246,0.2);
+    padding:10px 14px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .tip-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--blue);}
+  .tip-popup-close{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;line-height:1;}
+  .tip-popup-close:hover{color:var(--text1);}
+  .tip-popup-body{padding:12px 14px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,0.3) transparent;}
+  .tip-popup-body::-webkit-scrollbar{width:4px;}
+  .tip-popup-body::-webkit-scrollbar-track{background:transparent;}
+  .tip-popup-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,0.3);border-radius:2px;}
+  .tip-section{margin-bottom:10px;}
+  .tip-section:last-child{margin-bottom:0;}
+  .tip-section-label{
+    font-family:var(--mono);font-size:9px;letter-spacing:0.1em;
+    color:var(--text3);text-transform:uppercase;margin-bottom:5px;
+  }
+  .tip-section-text{font-size:11px;line-height:1.65;color:var(--text2);}
+  .tip-section-text strong{color:var(--text1);font-weight:500;}
+  .tip-rule{
+    display:flex;align-items:flex-start;gap:7px;
+    padding:5px 8px;margin-bottom:4px;
+    background:rgba(255,255,255,0.03);border-radius:5px;
+    border-left:2px solid;
+  }
+  .tip-rule-text{font-size:11px;line-height:1.5;color:var(--text2);}
+  .tip-rule-text strong{color:var(--text1);font-weight:500;}
+  .tip-rule.green{border-color:var(--green);}
+  .tip-rule.amber{border-color:var(--amber);}
+  .tip-rule.red{border-color:var(--red);}
+  .tip-rule.blue{border-color:var(--blue);}
+  .tip-rule.purple{border-color:var(--purple);}
+  .tip-warning{
+    margin-top:10px;padding:7px 10px;
+    background:rgba(245,158,11,0.07);border:0.5px solid rgba(245,158,11,0.2);
+    border-radius:6px;font-size:10px;line-height:1.5;color:rgba(245,158,11,0.85);
+  }
+  .etf-legend{display:flex;flex-direction:column;gap:2px;}
+  .etf-row{display:grid;grid-template-columns:38px 108px 1fr;align-items:baseline;gap:8px;padding:4px 7px;border-radius:4px;background:rgba(255,255,255,0.03);}
+  .etf-row:hover{background:rgba(255,255,255,0.06);}
+  .etf-ticker{font-family:var(--mono);font-size:10px;font-weight:500;}
+  .etf-name{font-size:11px;color:var(--text1);font-weight:500;}
+  .etf-desc{font-size:10px;color:var(--text3);line-height:1.4;}
+
+  /* LIVE / SIMULATED STATUS BADGES */
+  .badge-live{background:rgba(34,197,94,0.12);border:0.5px solid rgba(34,197,94,0.35);color:var(--green);}
+  .badge-sim{background:rgba(100,116,139,0.15);border:0.5px solid rgba(100,116,139,0.3);color:#64748b;}
+  .badge-partial{background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.35);color:var(--amber);}
+
+
+  .data-status-row{display:flex;align-items:center;gap:6px;padding:6px 14px;
+    border-bottom:0.5px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text3);}
+  .ds-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .ds-live{background:var(--green);box-shadow:0 0 4px rgba(34,197,94,0.5);}
+  .ds-sim{background:#475569;}
+  .ds-label{color:var(--text2);}
+
+  /* MACRO */
+  .macro-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);}
+  .macro-row:last-child{border-bottom:none;}
+  .macro-label{color:var(--text2);font-size:12px;display:flex;align-items:center;gap:6px;}
+  .macro-label i{font-size:11px;opacity:0.6;}
+  .macro-val{font-family:var(--mono);font-size:12px;font-weight:500;}
+  .macro-signal{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:0.05em;}
+  .sig-bull{background:rgba(34,197,94,0.15);color:var(--green);}
+  .sig-bear{background:rgba(239,68,68,0.15);color:var(--red);}
+  .sig-neut{background:rgba(245,158,11,0.15);color:var(--amber);}
+
+  /* HEATMAP */
+  .sector-grid{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;padding:12px 14px;}
+  .sector-cell{border-radius:6px;padding:8px 6px;text-align:center;cursor:pointer;transition:transform 0.15s,border-color 0.15s;border:0.5px solid transparent;position:relative;overflow:hidden;}
+  .sector-cell:hover{transform:translateY(-2px);border-color:var(--border2);}
+  .sector-cell.selected{border-color:var(--blue)!important;}
+  .sector-name{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;margin-bottom:4px;}
+  .sector-ticker{font-family:var(--mono);font-size:10px;font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:4px;}
+  .sector-perf{font-family:var(--mono);font-size:13px;font-weight:600;}
+  .sector-flow{font-size:9px;margin-top:3px;opacity:0.7;font-family:var(--mono);}
+
+  /* ROTATION TABLE */
+  .rotation-table{width:100%;border-collapse:collapse;}
+  .rotation-table th{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border2);}
+  .rotation-table td{padding:8px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;}
+  .rotation-table tr:last-child td{border-bottom:none;}
+  .rotation-table tr{transition:background 0.15s;cursor:pointer;}
+  .rotation-table tr:hover td{background:rgba(255,255,255,0.03);}
+  .from-to{display:flex;align-items:center;gap:5px;font-size:12px;}
+  .sector-tag{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;white-space:nowrap;}
+  .arrow-icon{color:var(--text3);font-size:10px;}
+  .prob-bar{position:relative;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:3px;width:60px;}
+  .prob-fill{height:100%;border-radius:2px;}
+  .prob-text{font-family:var(--mono);font-size:11px;font-weight:500;}
+  .upside-val{font-family:var(--mono);font-size:12px;color:var(--green);font-weight:500;}
+  .date-val{font-family:var(--mono);font-size:10px;color:var(--text2);}
+
+  /* PICKS */
+  .pick-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);}
+  .pick-row:last-child{border-bottom:none;}
+  .pick-ticker{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text1);}
+  .pick-name{font-size:10px;color:var(--text2);margin-top:1px;}
+  .pick-right{text-align:right;}
+  .pick-upside{font-family:var(--mono);font-size:12px;color:var(--green);}
+  .pick-score{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
+  .pick-rank{font-family:var(--mono);font-size:10px;color:var(--blue);width:20px;}
+
+  /* FLOWS */
+  .flow-item{margin-bottom:10px;}
+  .flow-item:last-child{margin-bottom:0;}
+  .flow-header{display:flex;justify-content:space-between;margin-bottom:4px;}
+  .flow-sector{font-size:11px;color:var(--text2);}
+  .flow-amount{font-family:var(--mono);font-size:11px;}
+  .flow-bar-bg{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;}
+  .flow-bar{height:100%;border-radius:3px;transition:width 1s ease;}
+
+  /* CHART */
+  .chart-container{padding:14px;}
+  .chart-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+  .chart-tab{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:20px;cursor:pointer;letter-spacing:0.05em;background:transparent;border:0.5px solid var(--border2);color:var(--text2);transition:all 0.15s;}
+  .chart-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  /* CYCLE */
+  .cycle-container{padding:14px;}
+  .cycle-visual{position:relative;width:100%;padding-bottom:100%;}
+  .cycle-svg{position:absolute;inset:0;width:100%;height:100%;}
+
+  /* GAUGES */
+  .gauge-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;}
+  .gauge-item{text-align:center;}
+  .gauge-label{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:0.05em;margin-bottom:4px;}
+  .gauge-val{font-family:var(--mono);font-size:18px;font-weight:500;}
+  .gauge-sub{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+
+  /* SIGNALS TICKER */
+  .signals-bar{display:flex;align-items:center;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;height:32px;}
+  .signals-label{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--text3);padding:0 12px;border-right:0.5px solid var(--border2);white-space:nowrap;height:100%;display:flex;align-items:center;}
+  .ticker-scroll{flex:1;overflow:hidden;position:relative;}
+  .ticker-inner{display:flex;white-space:nowrap;animation:scroll-ticker 40s linear infinite;}
+  @keyframes scroll-ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  .ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 16px;border-right:0.5px solid var(--border);height:32px;font-family:var(--mono);font-size:10px;}
+  .ticker-name{color:var(--text2);}
+  .ticker-price{color:var(--text1);font-weight:500;}
+  .ticker-chg-up{color:var(--green);}
+  .ticker-chg-dn{color:var(--red);}
+
+  /* API KEY SETUP PANEL */
+  .apikey-panel{
+    background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(167,139,250,0.08));
+    border:0.5px solid rgba(59,130,246,0.3);border-radius:10px;
+    padding:20px 24px;margin-bottom:12px;
+    display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;
+  }
+  .apikey-panel.hidden{display:none;}
+  .apikey-icon{font-size:28px;opacity:0.6;flex-shrink:0;margin-top:2px;}
+  .apikey-content{flex:1;min-width:260px;}
+  .apikey-title{font-family:var(--serif);font-size:17px;margin-bottom:4px;}
+  .apikey-desc{font-size:12px;line-height:1.65;color:var(--text2);margin-bottom:12px;}
+  .apikey-desc a{color:var(--blue);text-decoration:none;}
+  .apikey-desc a:hover{text-decoration:underline;}
+  .apikey-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .apikey-input{
+    font-family:var(--mono);font-size:11px;padding:7px 12px;flex:1;min-width:240px;
+    background:rgba(0,0,0,0.3);border:0.5px solid var(--border2);border-radius:6px;
+    color:var(--text1);outline:none;letter-spacing:0.03em;
+  }
+  .apikey-input:focus{border-color:rgba(59,130,246,0.5);box-shadow:0 0 0 2px rgba(59,130,246,0.1);}
+  .apikey-input::placeholder{color:var(--text3);}
+  .apikey-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:0.05em;
+    padding:7px 18px;border-radius:6px;cursor:pointer;white-space:nowrap;
+    background:var(--blue);border:none;color:#fff;font-weight:500;
+    transition:opacity 0.15s;
+  }
+  .apikey-btn:hover{opacity:0.85;}
+  .apikey-note{font-size:10px;color:var(--text3);margin-top:8px;font-family:var(--mono);}
+  .apikey-status{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;font-family:var(--mono);}
+  .apikey-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+  /* AI NARRATIVE PANEL */
+  .narrative-panel{margin-top:12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+  .narrative-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid var(--border);background:var(--bg3);}
+  .narrative-header-left{display:flex;align-items:center;gap:10px;}
+  .narrative-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;}
+  .narrative-model-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);}
+  .narrative-gen-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;padding:5px 14px;border-radius:20px;cursor:pointer;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);transition:all 0.15s;display:flex;align-items:center;gap:6px;}
+  .narrative-gen-btn:hover:not(:disabled){background:rgba(167,139,250,0.2);}
+  .narrative-gen-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .narrative-body{padding:18px 20px;}
+  .narrative-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:12px;}
+  .narrative-spinner{width:28px;height:28px;border:2px solid rgba(167,139,250,0.15);border-top:2px solid var(--purple);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .narrative-loading-text{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.08em;}
+  .narrative-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .narrative-grid-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
+  .narrative-card{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:14px;}
+  .narrative-card.highlight{border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.06);}
+  .narrative-card-label{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .narrative-card-label i{font-size:10px;}
+  .narrative-card-text{font-size:12px;line-height:1.7;color:var(--text2);}
+  .narrative-card-text strong{color:var(--text1);font-weight:500;}
+  .narrative-card.highlight .narrative-card-text{color:var(--text1);}
+  .narrative-card.highlight .narrative-card-label{color:var(--purple);}
+  .narrative-card.final-rec{grid-column:1/-1;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.05);}
+  .narrative-card.final-rec .narrative-card-label{color:var(--green);}
+  .narrative-card.final-rec .narrative-card-text{font-size:13px;line-height:1.75;}
+  .narrative-empty{text-align:center;padding:32px;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.7;}
+  .narrative-empty i{font-size:24px;display:block;margin-bottom:12px;opacity:0.3;}
+  .narrative-error{text-align:center;padding:24px;font-family:var(--mono);font-size:11px;color:var(--red);background:rgba(239,68,68,0.06);border-radius:6px;margin:12px;}
+
+  /* FOOTER */
+  footer{margin-top:12px;padding:10px 20px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:space-between;}
+  .footer-note{font-size:10px;color:var(--text3);font-family:var(--mono);}
+  .refresh-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;padding:5px 14px;border-radius:20px;cursor:pointer;background:rgba(59,130,246,0.1);border:0.5px solid rgba(59,130,246,0.3);color:var(--blue);transition:all 0.15s;}
+  .refresh-btn:hover{background:rgba(59,130,246,0.2);}
+
+  /* DETAIL MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px;padding:24px;max-width:480px;width:90%;position:relative;}
+  .modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;}
+  .modal-title{font-family:var(--serif);font-size:20px;margin-bottom:4px;}
+  .modal-sub{font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:16px;letter-spacing:0.05em;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .modal-stat{background:var(--bg3);border-radius:8px;padding:12px;}
+  .modal-stat-label{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:0.08em;margin-bottom:4px;}
+  .modal-stat-val{font-family:var(--mono);font-size:18px;font-weight:500;}
+  .modal-picks-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
+  .modal-picks{display:flex;gap:8px;flex-wrap:wrap;}
+  .modal-pick-chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;background:var(--bg3);border:0.5px solid var(--border2);}
+  .modal-rationale{font-size:12px;line-height:1.6;color:var(--text2);margin-top:12px;}
 </style>
 </head>
 <body>
-<h2>🔑 Anthropic API Key Tester</h2>
-<p style="color:#8892a4;font-size:13px;margin-bottom:20px;">
-  Paste your key and click TEST. This file only tests the API — nothing else.
-</p>
+<div class="dashboard">
 
-<input type="text" id="keyInput" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+  <header>
+    <div class="header-left">
+      <div class="logo">Sector<span>Pulse</span></div>
+      <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    </div>
+    <div class="header-right">
+      <div class="cycle-badge" id="cycleLabel">MID EXPANSION</div>
+      <div class="timestamp" id="clockDisplay">—</div>
+    </div>
+  </header>
 
-<div>
-  <button onclick="runTest()">▶ TEST KEY</button>
-  <button onclick="toggleShow()">👁 SHOW/HIDE</button>
-  <button onclick="clearLog()">✕ CLEAR</button>
+  <div class="signals-bar">
+    <div class="signals-label">SIGNALS</div>
+    <div class="ticker-scroll"><div class="ticker-inner" id="tickerInner"></div></div>
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="panel" style="margin-bottom:0">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="panel-title">Sector Performance &amp; ETF Heatmap</span>
+        <button class="tip-btn" onclick="showTip('heatmap',this)" title="Learn about this panel">?</button>
+      </div>
+      <span class="panel-badge badge-live" id="heatmapPeriod">&#9679; LIVE · YAHOO</span>
+    </div>
+    <!-- DATA SOURCE STATUS ROW -->
+    <div class="data-status-row">
+      <span class="ds-dot" id="heatDot" style="background:#475569"></span>
+      <span class="ds-label" id="heatStatusText">Heatmap, Macro &amp; RS: fetching via Claude AI search…</span>
+      &nbsp;·&nbsp;
+      <span class="ds-dot ds-sim"></span>
+      <span class="ds-label">Fund flows, RSI, breadth, put/call, rotation signals: simulated</span>
+    </div>
+    <div class="sector-grid" id="sectorGrid"></div>
+  </div>
+
+  <div class="main-grid" style="margin-top:12px;">
+
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Macro Indicators</span>
+            <button class="tip-btn" onclick="showTip('macro',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim" id="macroBadge">SIMULATED</span>
+        </div>
+        <div class="panel-body" id="macroPanel"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Business Cycle Position</span>
+            <button class="tip-btn" onclick="showTip('cycle',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-purple">MODEL</span>
+        </div>
+        <div class="cycle-container">
+          <div class="cycle-visual">
+            <svg class="cycle-svg" viewBox="0 0 240 240" id="cycleSvg"></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">ETF Fund Flows (5-Day)</span>
+            <button class="tip-btn" onclick="showTip('flows',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div class="panel-body" id="flowPanel"></div>
+      </div>
+
+    </div>
+
+    <!-- CENTER -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Upcoming Rotation Signals</span>
+            <button class="tip-btn" onclick="showTip('rotation',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div style="padding:0 4px;">
+          <table class="rotation-table">
+            <thead><tr>
+              <th>FROM → TO</th><th>PROBABILITY</th><th>UPSIDE</th><th>EXP. DATE</th><th>CATALYST</th>
+            </tr></thead>
+            <tbody id="rotationTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Relative Strength vs S&amp;P 500</span>
+            <button class="tip-btn" onclick="showTip('rs',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-live">&#9679; LIVE · YAHOO</span>
+        </div>
+        <div class="chart-container">
+          <div class="chart-tabs" id="rsChartTabs"></div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:8px;letter-spacing:0.04em;">12-week window · each label = week ending that Friday · positive = outperforming S&P 500</div>
+          <div style="position:relative;height:200px;">
+            <canvas id="rsChart" role="img" aria-label="Relative strength of selected sector vs S&P 500 over 12 weeks"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Sector Breadth (% Above 50DMA)</span>
+            <button class="tip-btn" onclick="showTip('breadth',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div style="position:relative;height:180px;padding:14px;">
+          <canvas id="breadthChart" role="img" aria-label="Percent of stocks above 50-day moving average by sector"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Top Rotation Picks</span>
+            <button class="tip-btn" onclick="showTip('picks',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div class="panel-body" id="topPicks"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Sector RSI Gauges</span>
+            <button class="tip-btn" onclick="showTip('rsi',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div class="gauge-grid" id="gaugeGrid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Options Flow (Put/Call)</span>
+            <button class="tip-btn" onclick="showTip('putcall',this)" title="Learn about this panel">?</button>
+          </div>
+          <span class="panel-badge badge-sim">SIMULATED</span>
+        </div>
+        <div style="position:relative;height:140px;padding:14px;">
+          <canvas id="pcChart" role="img" aria-label="Put/call ratio by sector"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- API KEY SETUP PANEL -->
+  <div class="apikey-panel" id="apikeyPanel">
+    <div class="apikey-icon">🔑</div>
+    <div class="apikey-content">
+      <div class="apikey-title">Connect to Claude AI for Live Data &amp; Analysis</div>
+      <div class="apikey-desc">
+        This dashboard uses the <strong>Claude API</strong> to fetch real market data (ETF prices, macro indicators) and write the AI narrative. 
+        You need a free Anthropic API key — get one in 60 seconds at 
+        <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 
+        (free tier includes $5 credit, no credit card required to sign up).<br><br>
+        <strong>Your key stays in your browser only</strong> (localStorage) — it is never sent anywhere except directly to api.anthropic.com.
+      </div>
+      <div class="apikey-row">
+        <input class="apikey-input" id="apikeyInput" type="password"
+          placeholder="sk-ant-api03-…  (paste your Anthropic API key here)"
+          onkeydown="if(event.key==='Enter') saveApiKey()"
+          oninput="document.getElementById('apikeyValidationMsg').style.display='none'">
+        <button class="apikey-btn" onclick="saveApiKey()">CONNECT</button>
+        <button onclick="toggleKeyVisibility()" id="eyeBtn" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide key">👁</button>
+      </div>
+      <div id="apikeyValidationMsg" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);border-radius:5px;font-size:11px;color:#ef4444;font-family:var(--mono);"></div>
+      <div class="apikey-note">⚡ Key is saved in your browser. One-time setup — persists across refreshes.</div>
+      <div class="apikey-status" id="apikeyStatus" style="display:none">
+        <div class="apikey-status-dot" id="apikeyStatusDot"></div>
+        <span id="apikeyStatusText"></span>
+        <button onclick="clearApiKey()" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;font-family:var(--mono)">CLEAR KEY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI NARRATIVE PANEL -->
+  <div class="narrative-panel">
+    <div class="narrative-header">
+      <div class="narrative-header-left">
+        <span class="narrative-title">AI Market Narrative</span>
+        <button class="tip-btn" onclick="showTip('narrative',this)" title="Learn about this panel">?</button>
+        <span class="narrative-model-tag">CLAUDE · LIVE ANALYSIS</span>
+      </div>
+      <button class="narrative-gen-btn" id="narrativeBtn" onclick="generateNarrative()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS
+      </button>
+    </div>
+    <div class="narrative-body" id="narrativeBody">
+      <div class="narrative-empty">
+        <i class="fa-solid fa-brain"></i>
+        Click <strong>GENERATE ANALYSIS</strong> to have Claude read every panel and write a plain-English interpretation — one paragraph per panel, building to a final stock pick recommendation.<br><br>
+        <span style="color:var(--text3);font-size:10px;">Also runs automatically on each ↻ REFRESH DATA</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-note">DATA: Simulated market data for educational purposes · Sources: ETF flows, options market, macro indicators · Built for GitHub Pages</div>
+    <button class="refresh-btn" onclick="refreshAll()">↻ REFRESH DATA</button>
+  </footer>
 </div>
 
-<div id="log">Waiting for test…</div>
+<!-- TOOLTIP POPUP (singleton) -->
+<div class="tip-popup" id="tipPopup">
+  <div class="tip-popup-header">
+    <span class="tip-popup-title" id="tipTitle">PANEL GUIDE</span>
+    <button class="tip-popup-close" onclick="closeTip()">✕</button>
+  </div>
+  <div class="tip-popup-body" id="tipBody"></div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
 
 <script>
-function log(msg, cls){
-  const el = document.getElementById('log');
-  const line = document.createElement('div');
-  if(cls) line.className = cls;
-  line.textContent = msg;
-  el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
-}
-function clearLog(){
-  document.getElementById('log').innerHTML = '';
-}
-function toggleShow(){
-  const inp = document.getElementById('keyInput');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  log('Input type toggled to: ' + inp.type, 'info');
-}
+const SECTORS=[
+  {ticker:'XLK',name:'Technology',full:'Technology Select Sector SPDR',desc:'Apple, Microsoft, Nvidia, Meta — big tech & semiconductors',perf:null,flow:null,rsi:null,color:'#3b82f6',breadth:null},
+  {ticker:'XLE',name:'Energy',full:'Energy Select Sector SPDR',desc:'Exxon, Chevron, ConocoPhillips — oil, gas & energy services',perf:null,flow:null,rsi:null,color:'#f59e0b',breadth:null},
+  {ticker:'XLF',name:'Financials',full:'Financial Select Sector SPDR',desc:'JPMorgan, Berkshire, Goldman — banks, insurance & asset managers',perf:null,flow:null,rsi:null,color:'#22c55e',breadth:null},
+  {ticker:'XLV',name:'Healthcare',full:'Health Care Select Sector SPDR',desc:'UnitedHealth, Johnson & Johnson, Pfizer — pharma & hospitals',perf:null,flow:null,rsi:null,color:'#14b8a6',breadth:null},
+  {ticker:'XLI',name:'Industrials',full:'Industrial Select Sector SPDR',desc:'Caterpillar, Honeywell, GE — aerospace, defense & machinery',perf:null,flow:null,rsi:null,color:'#6366f1',breadth:null},
+  {ticker:'XLP',name:'Cons. Staples',full:'Consumer Staples Select Sector SPDR',desc:'Procter & Gamble, Coca-Cola, Walmart — everyday essentials',perf:null,flow:null,rsi:null,color:'#ec4899',breadth:null},
+  {ticker:'XLY',name:'Cons. Disc.',full:'Consumer Discretionary Select Sector SPDR',desc:'Amazon, Tesla, Home Depot — non-essential spending',perf:null,flow:null,rsi:null,color:'#f97316',breadth:null},
+  {ticker:'XLU',name:'Utilities',full:'Utilities Select Sector SPDR',desc:'NextEra, Duke Energy, Southern Co — electric, water & gas utilities',perf:null,flow:null,rsi:null,color:'#8b5cf6',breadth:null},
+  {ticker:'XLRE',name:'Real Estate',full:'Real Estate Select Sector SPDR',desc:'American Tower, Prologis, Equinix — REITs & property trusts',perf:null,flow:null,rsi:null,color:'#10b981',breadth:null},
+  {ticker:'XLB',name:'Materials',full:'Materials Select Sector SPDR',desc:'Linde, Air Products, Freeport — chemicals, metals & mining',perf:null,flow:null,rsi:null,color:'#06b6d4',breadth:null},
+  {ticker:'XLC',name:'Comm. Svcs.',full:'Communication Services Select Sector SPDR',desc:'Alphabet, Netflix, Disney, AT&T — media, telecom & social',perf:null,flow:null,rsi:null,color:'#a78bfa',breadth:null},
+];
 
-async function runTest(){
-  clearLog();
-  const key = document.getElementById('keyInput').value.trim();
+// MACRO_DATA — starts with fallback values; overwritten by FRED if key is set
+let MACRO_DATA=[
+  {label:'Fed Funds Rate',value:'—',signal:'neut',icon:'fa-landmark',fredId:'FEDFUNDS',live:false},
+  {label:'10Y-2Y Spread',value:'—',signal:'neut',icon:'fa-chart-line',fredId:'T10Y2Y',live:false},
+  {label:'ISM Manufacturing',value:'52.4',signal:'bull',icon:'fa-industry',fredId:null,live:false},
+  {label:'CPI YoY',value:'—',signal:'neut',icon:'fa-coins',fredId:'CPIAUCSL',live:false},
+  {label:'VIX',value:'—',signal:'neut',icon:'fa-wave-square',fredId:'VIXCLS',live:false},
+  {label:'Credit Spreads (IG)',value:'1.2%',signal:'bull',icon:'fa-handshake',fredId:null,live:false},
+  {label:'DXY (USD)',value:'—',signal:'neut',icon:'fa-dollar-sign',fredId:'DTWEXBGS',live:false},
+  {label:'WTI Crude',value:'—',signal:'neut',icon:'fa-oil-well',fredId:null,live:false},
+];
 
-  log('=== STEP 1: Reading key ===', 'info');
-  if(!key){
-    log('ERROR: Key field is empty.', 'err'); return;
+// ── API KEY MANAGEMENT ───────────────────────────────────────────────────────
+let anthropicApiKey = localStorage.getItem('anthropicApiKey') || '';
+
+function saveApiKey(){
+  const val = document.getElementById('apikeyInput').value.trim();
+  // Accept any key starting with 'sk-' (Anthropic format, old or new)
+  if(!val || !val.startsWith('sk-')){
+    document.getElementById('apikeyValidationMsg').textContent =
+      '⚠ Key must start with  sk-  — check you copied the full key from console.anthropic.com';
+    document.getElementById('apikeyValidationMsg').style.display = 'block';
+    return;
   }
-  log('Key length: ' + key.length + ' chars');
-  log('Key prefix: ' + key.substring(0, 14) + '...');
-  log('Starts with sk-: ' + key.startsWith('sk-'));
+  document.getElementById('apikeyValidationMsg').style.display = 'none';
+  anthropicApiKey = val;
+  localStorage.setItem('anthropicApiKey', val);
+  document.getElementById('apikeyPanel').classList.add('hidden');
+  setKeyStatus('ok','Connected · key saved in browser storage');
+  generateNarrative();
+}
 
-  log('');
-  log('=== STEP 2: Testing API connection ===', 'info');
-  log('Sending request to api.anthropic.com...');
+function clearApiKey(){
+  anthropicApiKey = '';
+  localStorage.removeItem('anthropicApiKey');
+  document.getElementById('apikeyInput').value = '';
+  document.getElementById('apikeyValidationMsg').style.display = 'none';
+  document.getElementById('apikeyPanel').classList.remove('hidden');
+  setKeyStatus('','');
+}
 
+function toggleKeyVisibility(){
+  const input = document.getElementById('apikeyInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function setKeyStatus(type, msg){
+  const row = document.getElementById('apikeyStatus');
+  const dot = document.getElementById('apikeyStatusDot');
+  const txt = document.getElementById('apikeyStatusText');
+  if(!type){ row.style.display='none'; return; }
+  row.style.display='flex';
+  txt.textContent = msg;
+  dot.style.background = type==='ok' ? '#22c55e' : type==='error' ? '#ef4444' : '#f59e0b';
+}
+
+function initApiKey(){
+  if(anthropicApiKey){
+    document.getElementById('apikeyPanel').classList.add('hidden');
+    document.getElementById('apikeyInput').value = anthropicApiKey;
+    setKeyStatus('ok','Connected · key loaded from browser storage');
+  }
+}
+
+// ── LIVE DATA VIA CLAUDE WEB SEARCH ──────────────────────────────────────────
+// Claude fetches real market data using its web_search tool, then returns
+// structured JSON + narrative in one API call. No CORS issues, no API keys.
+
+function buildLiveDataPrompt(){
+  const sectorTickers = SECTORS.map(s=>s.ticker).join(',');
+  return `You are a market data assistant. Use web search to find current real market data, then return a JSON object followed by a narrative analysis.
+
+STEP 1 — Search for and retrieve these exact data points (use web search for current values):
+- Weekly % price change (last 5 trading days) for these ETFs: XLK, XLE, XLF, XLV, XLI, XLP, XLY, XLU, XLRE, XLB, XLC, SPY, QQQ
+- Current values: US Fed Funds Rate, US 10Y-2Y Treasury yield spread, VIX index, CPI YoY %, WTI Crude Oil price, US Dollar Index (DXY)
+- Weekly RS (relative strength vs SPY, last 12 weeks) for: XLK, XLE, XLF, XLV, XLI, XLP (as array of 12 weekly % outperformance values)
+
+STEP 2 — Return ONLY this exact JSON structure (no markdown, no backticks, no extra text before the JSON):
+{
+  "asOf": "YYYY-MM-DD",
+  "etfWeeklyPct": {
+    "XLK": 0.0, "XLE": 0.0, "XLF": 0.0, "XLV": 0.0, "XLI": 0.0,
+    "XLP": 0.0, "XLY": 0.0, "XLU": 0.0, "XLRE": 0.0, "XLB": 0.0, "XLC": 0.0,
+    "SPY": 0.0, "QQQ": 0.0
+  },
+  "etfPrices": {
+    "XLK": 0.0, "XLE": 0.0, "XLF": 0.0, "XLV": 0.0, "XLI": 0.0,
+    "XLP": 0.0, "XLY": 0.0, "XLU": 0.0, "XLRE": 0.0, "XLB": 0.0, "XLC": 0.0,
+    "SPY": 0.0, "QQQ": 0.0
+  },
+  "macro": {
+    "fedFunds": 0.0,
+    "yieldSpread10y2y": 0.0,
+    "vix": 0.0,
+    "cpiYoY": 0.0,
+    "wtiCrude": 0.0,
+    "dxy": 0.0
+  },
+  "rsHistory": {
+    "XLK": [0,0,0,0,0,0,0,0,0,0,0,0],
+    "XLE": [0,0,0,0,0,0,0,0,0,0,0,0],
+    "XLF": [0,0,0,0,0,0,0,0,0,0,0,0],
+    "XLV": [0,0,0,0,0,0,0,0,0,0,0,0],
+    "XLI": [0,0,0,0,0,0,0,0,0,0,0,0],
+    "XLP": [0,0,0,0,0,0,0,0,0,0,0,0]
+  },
+  "narrative": {
+    "macro": "3-5 sentence paragraph about the macro environment based on the data.",
+    "heatmap": "3-5 sentence paragraph about sector performance patterns.",
+    "flows": "3-5 sentence paragraph about ETF fund flow implications (note: flow data is simulated).",
+    "breadth": "3-5 sentence paragraph about market breadth and RSI (note: breadth/RSI are simulated).",
+    "options": "3-5 sentence paragraph about options sentiment (note: put/call data is simulated).",
+    "rotation": "3-5 sentence paragraph about the most likely rotation opportunities given current data.",
+    "recommendation": "3-5 sentence paragraph with 3-4 specific stock picks with tickers, reasoning from multiple signals, time horizon, and one risk caveat."
+  }
+}
+
+Fill every field with real searched data. For rsHistory, each array represents weekly outperformance vs SPY over the past 12 weeks (positive = outperforming, negative = underperforming). If a value cannot be found, use your best estimate based on recent knowledge and mark asOf accordingly. Return ONLY the JSON object, nothing else.`;
+}
+
+function macroSignal(key, value){
+  if(key==='fedFunds')          return value > 4 ? 'bear' : value > 2 ? 'neut' : 'bull';
+  if(key==='yieldSpread10y2y')  return value > 0.2 ? 'bull' : value > -0.2 ? 'neut' : 'bear';
+  if(key==='cpiYoY')            return value > 4 ? 'bear' : value > 2.5 ? 'neut' : 'bull';
+  if(key==='vix')               return value < 20 ? 'bull' : value < 30 ? 'neut' : 'bear';
+  if(key==='wtiCrude')          return value > 90 ? 'bear' : value > 70 ? 'neut' : 'bull';
+  if(key==='dxy')               return value > 105 ? 'bear' : value > 100 ? 'neut' : 'bull';
+  return 'neut';
+}
+
+function applyLiveData(parsed){
+  // ── ETF weekly % changes → heatmap
+  const pcts = parsed.etfWeeklyPct || {};
+  const prices = parsed.etfPrices || {};
+  SECTORS.forEach(s=>{
+    if(pcts[s.ticker] !== undefined){
+      s.perf = parseFloat(pcts[s.ticker].toFixed(2));
+      s.live = true;
+    }
+    if(prices[s.ticker]) s.livePrice = prices[s.ticker];
+  });
+
+  // ── Macro indicators
+  const m = parsed.macro || {};
+  const macroMap = [
+    {label:'Fed Funds Rate',  key:'fedFunds',         fmt: v=>v.toFixed(2)+'%', icon:'fa-landmark'},
+    {label:'10Y-2Y Spread',   key:'yieldSpread10y2y', fmt: v=>(v>=0?'+':'')+v.toFixed(2)+'%', icon:'fa-chart-line'},
+    {label:'CPI YoY',         key:'cpiYoY',           fmt: v=>v.toFixed(1)+'%', icon:'fa-coins'},
+    {label:'VIX',             key:'vix',              fmt: v=>v.toFixed(1), icon:'fa-wave-square'},
+    {label:'WTI Crude',       key:'wtiCrude',         fmt: v=>'$'+v.toFixed(2), icon:'fa-oil-well'},
+    {label:'DXY (USD)',       key:'dxy',              fmt: v=>v.toFixed(1), icon:'fa-dollar-sign'},
+  ];
+  macroMap.forEach(def=>{
+    const entry = MACRO_DATA.find(x=>x.label===def.label);
+    if(entry && m[def.key] !== undefined && m[def.key] !== 0){
+      entry.value  = def.fmt(m[def.key]);
+      entry.signal = macroSignal(def.key, m[def.key]);
+      entry.live   = true;
+    }
+  });
+
+  // ── RS history cache
+  const rs = parsed.rsHistory || {};
+  Object.keys(rs).forEach(ticker=>{
+    if(Array.isArray(rs[ticker]) && rs[ticker].length >= 6){
+      rsDataCache[ticker] = rs[ticker].slice(-12);
+    }
+  });
+
+  // ── Ticker bar
+  const allTickerSyms = ['XLK','XLE','XLF','XLV','XLI','XLP','XLY','XLU','XLRE','XLB','XLC','SPY','QQQ'];
+  allTickerSyms.forEach(sym=>{
+    const item = TICKER_DATA.find(t=>t.name===sym||(sym==='SPY'&&t.name==='S&P 500'));
+    if(item && prices[sym]){
+      item.price = prices[sym] < 100 ? prices[sym].toFixed(2) : prices[sym].toFixed(0);
+      const chgPct = pcts[sym];
+      if(chgPct !== undefined){
+        item.chg = (chgPct>=0?'+':'')+chgPct.toFixed(1)+'%';
+        item.up  = chgPct >= 0;
+      }
+    }
+  });
+}
+
+function updateDataStatusLive(parsed){
+  const dot   = document.getElementById('heatDot');
+  const label = document.getElementById('heatStatusText');
+  const asOf  = parsed.asOf || 'unknown date';
+  const liveSectors = SECTORS.filter(s=>s.live).length;
+  const liveMacro   = MACRO_DATA.filter(m=>m.live).length;
+  dot.style.background = '';
+  dot.classList.add('ds-live');
+  label.textContent = `Live data as of ${asOf} — ${liveSectors}/11 ETFs · ${liveMacro}/6 macro · RS chart (6 sectors) · via Claude web search`;
+  // Update panel badges
+  if(liveSectors > 0){
+    const hb = document.getElementById('heatmapPeriod');
+    hb.innerHTML = '&#9679; LIVE · CLAUDE SEARCH';
+    hb.className = 'panel-badge badge-live';
+  }
+  const mb = document.getElementById('macroBadge');
+  if(liveMacro >= 4){
+    mb.innerHTML = '&#9679; LIVE · CLAUDE SEARCH'; mb.className = 'panel-badge badge-live';
+  } else if(liveMacro > 0){
+    mb.innerHTML = '&#9651; PARTIAL · CLAUDE SEARCH'; mb.className = 'panel-badge badge-partial';
+  }
+}
+
+function updateDataStatusError(msg){
+  const dot   = document.getElementById('heatDot');
+  const label = document.getElementById('heatStatusText');
+  dot.style.background = '#ef4444';
+  label.textContent = 'Live fetch failed — showing simulated data. (' + msg + ')';
+  document.getElementById('heatmapPeriod').textContent = 'SIMULATED';
+  document.getElementById('heatmapPeriod').className = 'panel-badge badge-sim';
+}
+
+// RS Chart: uses rsDataCache populated by applyLiveData (or falls back to simulated)
+async function loadRsChartLive(sectorIdx){
+  const s = SECTORS[sectorIdx];
+  return rsDataCache[s.ticker] || null;
+}
+
+const ROTATIONS=[
+  {from:'Technology',to:'Energy',fromColor:'#3b82f6',toColor:'#f59e0b',prob:74,upside:'+12.4%',date:'Jun–Jul 2025',catalyst:'Oil supply tightening + Fed pause',picks:['XOM','CVX','SLB','PSX','VLO'],rationale:'Rising oil prices and a Fed pause typically trigger capital rotation from high-multiple tech into cash-generating energy majors. Supply constraints from OPEC+ support the thesis.'},
+  {from:'Cons. Disc.',to:'Financials',fromColor:'#f97316',toColor:'#22c55e',prob:68,upside:'+9.8%',date:'Jul–Aug 2025',catalyst:'Yield curve steepening, credit expansion',picks:['JPM','GS','BAC','WFC','MS'],rationale:'Steepening yield curve improves net interest margins for banks. Credit growth typically accelerates in mid-expansion, benefiting major financial institutions.'},
+  {from:'Utilities',to:'Industrials',fromColor:'#8b5cf6',toColor:'#6366f1',prob:61,upside:'+8.2%',date:'Aug 2025',catalyst:'Infrastructure spending cycle',picks:['CAT','DE','HON','GE','ETN'],rationale:'Government infrastructure bills and reshoring trends are driving industrial capex. Utilities typically underperform when growth expectations rise.'},
+  {from:'Healthcare',to:'Materials',fromColor:'#14b8a6',toColor:'#06b6d4',prob:55,upside:'+7.1%',date:'Sep 2025',catalyst:'China stimulus, commodity demand',picks:['FCX','NEM','APD','LIN','NUE'],rationale:'Anticipated Chinese stimulus measures would boost commodity demand. Materials sector trading at relative discount vs historical norms.'},
+  {from:'Comm. Svcs.',to:'Cons. Staples',fromColor:'#a78bfa',toColor:'#ec4899',prob:48,upside:'+5.9%',date:'Q4 2025',catalyst:'Late-cycle risk-off shift signals',picks:['PG','KO','PEP','WMT','COST'],rationale:'Approaching late-cycle dynamics may trigger defensive rotation. Consumer staples historically outperform in the 6 months before recessions.'},
+];
+
+const TOP_PICKS=[
+  {ticker:'XOM',name:'Exxon Mobil',sector:'Energy',upside:'+14.2%',score:92,reason:'Strong FCF, dividend growth'},
+  {ticker:'JPM',name:'JPMorgan Chase',sector:'Financials',upside:'+11.8%',score:88,reason:'NIM expansion play'},
+  {ticker:'CVX',name:'Chevron',sector:'Energy',upside:'+11.1%',score:85,reason:'Low P/E vs peers'},
+  {ticker:'CAT',name:'Caterpillar',sector:'Industrials',upside:'+9.4%',score:82,reason:'Infra cycle beneficiary'},
+  {ticker:'GS',name:'Goldman Sachs',sector:'Financials',upside:'+9.0%',score:79,reason:'IB recovery, buybacks'},
+  {ticker:'FCX',name:'Freeport-McMoRan',sector:'Materials',upside:'+8.7%',score:76,reason:'Copper demand thesis'},
+  {ticker:'SLB',name:'SLB (Schlumberger)',sector:'Energy',upside:'+8.2%',score:74,reason:'Intl oilfield services'},
+];
+
+const TICKER_DATA=[
+  {name:'XLK',price:'195.42',chg:'+1.2%',up:true},{name:'XLE',price:'88.61',chg:'+2.8%',up:true},
+  {name:'XLF',price:'41.33',chg:'+0.9%',up:true},{name:'XLV',price:'142.77',chg:'-0.4%',up:false},
+  {name:'XLI',price:'118.55',chg:'+1.6%',up:true},{name:'XLP',price:'72.14',chg:'-0.2%',up:false},
+  {name:'S&P 500',price:'5,243',chg:'+0.7%',up:true},{name:'QQQ',price:'446.88',chg:'+1.1%',up:true},
+  {name:'XLC',price:'86.40',chg:'+0.5%',up:true},{name:'XLRE',price:'38.20',chg:'-0.8%',up:false},
+  {name:'XLU',price:'65.33',chg:'-0.6%',up:false},{name:'XLB',price:'89.12',chg:'+1.9%',up:true},
+  {name:'VIX',price:'16.8',chg:'-5.2%',up:false},{name:'10Y YIELD',price:'4.41%',chg:'+0.04',up:true},
+];
+
+// ── TOOLTIP CONTENT ──────────────────────────────────────────────────────────
+function etfLegend(tickers){
+  const rows=tickers.map(t=>{
+    const s=SECTORS.find(x=>x.ticker===t);
+    if(!s)return'';
+    return`<div class="etf-row"><span class="etf-ticker" style="color:${s.color}">${s.ticker}</span><span class="etf-name">${s.name}</span><span class="etf-desc">${s.desc}</span></div>`;
+  }).join('');
+  return`<div class="tip-section"><div class="tip-section-label">ETF Legend — what these tickers mean</div><div class="etf-legend">${rows}</div></div>`;
+}
+function allEtfLegend(){
+  return etfLegend(SECTORS.map(s=>s.ticker));
+}
+
+const TIPS={
+  heatmap:{
+    title:'SECTOR HEATMAP GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Each tile = one S&P 500 sector ETF. <strong>Color intensity</strong> shows weekly price change — bright green means strong inflows and price gains, deep red means selling pressure. The small number below the % is the 5-day ETF flow in billions.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to use it</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>2+ sectors turning green together</strong> = broad risk-on rally. Good time to stay invested.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>One sector surging while others fall</strong> = rotation in progress. The green sector is receiving money from the red ones.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Most sectors red</strong> = risk-off environment. Consider defensive sectors (XLV, XLU, XLP).</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Newbie tip</div>
+        <div class="tip-section-text">Click any tile to load that sector's relative strength chart. Watch for a sector that's been red for 2–3 weeks suddenly turning flat or green — that's often the early signal of a rotation starting.</div>
+      </div>
+      ${allEtfLegend()}
+      <div class="tip-warning">⚠ One week of data is noisy. Confirm with the Rotation Signals table and RS Chart before acting.</div>
+    `
+  },
+  macro:{
+    title:'MACRO INDICATORS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Eight key economic signals that institutional investors watch to decide <strong>which sectors to rotate into</strong>. These are the "upstream" drivers — they move before stocks do.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading each signal</div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Fed Funds Rate:</strong> High rates = bearish for growth stocks (tech), bullish for banks (financials). A rate cut is the #1 trigger for big rotations.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>10Y–2Y Spread (yield curve):</strong> Positive & widening = steepening curve = buy financials. Negative = inverted = recession warning, buy defensives.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>ISM Manufacturing:</strong> Above 50 = expansion = bullish for industrials & materials. Below 50 = contraction.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>VIX (fear index):</strong> Below 20 = calm market, risk-on. Above 30 = fear, rotate to defensives. Above 40 = panic.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Credit Spreads:</strong> Tight (&lt;2%) = healthy economy. Widening fast = stress signal, exit cyclicals.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>DXY (US Dollar Index):</strong> Strong dollar hurts multinationals & commodities. Weak dollar boosts energy and materials.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>WTI Crude Oil:</strong> Rising oil = bullish for XLE (Energy). Sustained high oil also fuels inflation, which can hurt consumer sectors.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Which sectors each signal affects</div>
+        ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLU'])}
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Practical rule of thumb</div>
+        <div class="tip-section-text">When <strong>3+ indicators turn bullish simultaneously</strong>, the probability of a sustained rally in cyclical sectors (XLK, XLE, XLI) rises significantly. When 3+ turn bearish, shift to defensive sectors (XLV, XLU, XLP).</div>
+      </div>
+      <div class="tip-warning">⚠ Macro data is published monthly or weekly — it lags real-time market moves by days to weeks.</div>
+    `
+  },
+  cycle:{
+    title:'BUSINESS CYCLE GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The economy moves in predictable phases. Each phase historically favors different sectors. The glowing dot shows where we currently are in the cycle.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The 5 phases & best ETFs for each</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Recovery:</strong> Buy <em>XLF</em> (Financials), <em>XLK</em> (Tech). Earnings recovering, rates low.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Early Expansion:</strong> Buy <em>XLY</em> (Consumer Disc.), <em>XLB</em> (Materials). Jobs rising, spending up.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Mid Expansion (now):</strong> Buy <em>XLK</em> (Tech), <em>XLI</em> (Industrials). Corporate profits at highs.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Late Expansion:</strong> Rotate to <em>XLE</em> (Energy), <em>XLB</em> (Materials). Inflation often rises here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Recession:</strong> Buy <em>XLV</em> (Healthcare), <em>XLU</em> (Utilities), <em>XLP</em> (Staples). Defensive sectors hold value.</div></div>
+      </div>
+      ${etfLegend(['XLF','XLK','XLY','XLB','XLI','XLE','XLV','XLU','XLP'])}
+      <div class="tip-section">
+        <div class="tip-section-label">How to use it</div>
+        <div class="tip-section-text">Match the current phase to the Rotation Signals table. If the model says "Mid Expansion," rotations into XLK and XLI have historically succeeded <strong>65–70%</strong> of the time over a 6-month horizon.</div>
+      </div>
+      <div class="tip-warning">⚠ Cycle timing is an art, not a science. The model can be wrong by 3–6 months. Use it as context, not a precise timer.</div>
+    `
+  },
+  flows:{
+    title:'ETF FUND FLOWS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The total dollars (in billions) that investors moved <strong>into or out of</strong> each sector ETF over the past 5 trading days. This is one of the most direct ways to see rotation happening in real time.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to read it</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Large green bar ($1B+):</strong> Big institutional money is actively buying this sector. High-conviction signal — institutions don't move billions by accident.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Small positive flow with rising price:</strong> Healthy accumulation. Good entry timing.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Large red bar:</strong> Institutions are selling. Don't fight the flow — this sector may underperform for weeks.</div></div>
+      </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP'])}
+      <div class="tip-section">
+        <div class="tip-section-label">The key pattern to watch</div>
+        <div class="tip-section-text">When you see <strong>outflows from one sector and simultaneous inflows into another</strong> for 3+ consecutive days, that's a confirmed rotation. Fund flows are more reliable than price alone because they show real money moving, not just sentiment.</div>
+      </div>
+      <div class="tip-warning">⚠ Short-term flows can be noisy. A single day of large inflow might be one fund rebalancing. Look for 3–5 day trends.</div>
+    `
+  },
+  rotation:{
+    title:'ROTATION SIGNALS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Forecasted capital movements from one sector to another, ranked by probability. Each row means money is likely leaving the "From" sector and entering the "To" sector. <strong>Click any row</strong> for full analysis and stock picks.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Understanding probability</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>70%+:</strong> Strong signal. Multiple macro, flow, and technical indicators aligned. Consider sizing up positions.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>55–70%:</strong> Moderate signal. Good risk/reward but monitor for confirmation. Use smaller position sizes.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 55%:</strong> Speculative. Only for experienced traders with high risk tolerance. Don't bet the farm.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">How to act on this</div>
+        <div class="tip-section-text">Don't rotate your entire portfolio at once. A common approach: <strong>trim 25–30% of a "From" sector position</strong> when probability crosses 65%, then add to the "To" sector ETF. Wait for the ETF to break above its 20-day moving average as confirmation.</div>
+      </div>
+      ${etfLegend(['XLK','XLE','XLF','XLY','XLI','XLU','XLV','XLB','XLC','XLP','XLRE'])}
+      <div class="tip-section">
+        <div class="tip-section-label">Expected upside note</div>
+        <div class="tip-section-text">The % upside is a <strong>relative</strong> estimate — how much the destination sector is expected to outperform the S&P 500 over the forecast period, not an absolute price target.</div>
+      </div>
+      <div class="tip-warning">⚠ No forecast is guaranteed. Even a 74% probability means it fails 1 in 4 times. Always use stop-losses.</div>
+    `
+  },
+  rs:{
+    title:'RELATIVE STRENGTH GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">This chart shows how a sector ETF is performing <strong>relative to the S&P 500</strong> — not in absolute terms. A line going up means the sector is outperforming the market, even if the market itself is falling.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the chart</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Line trending up & above zero:</strong> This sector is a leader. Money is rotating IN. Strong buy signal.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Line crossing from negative to positive:</strong> Rotation just beginning. Often the best entry point — early but confirmed.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Line trending down & below zero:</strong> This sector is a laggard. Avoid or short via inverse ETFs.</div></div>
+      </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP'])}
+      <div class="tip-section">
+        <div class="tip-section-label">How to use the tabs</div>
+        <div class="tip-section-text">Click through the sector tabs above the chart to compare. Look for the sector where the RS line has been negative for 4–6 weeks then starts flattening — that's the classic <strong>"base and turn"</strong> pattern that often precedes a major rotation.</div>
+      </div>
+      <div class="tip-warning">⚠ RS charts are best used over 4–13 week windows. Daily noise can be misleading. Focus on the trend direction, not individual wiggles.</div>
+    `
+  },
+  breadth:{
+    title:'SECTOR BREADTH GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">For each sector ETF, the percentage of its individual member stocks that are trading <strong>above their own 50-day moving average</strong>. This tells you whether a rally (or sell-off) is broad-based or driven by just a few big names.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the bars</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Above 60% (green):</strong> Healthy, broad rally. Most stocks in the sector are participating. High-quality signal.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>40–60% (blue):</strong> Mixed. ETF may be OK but stock-picking matters more here.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Below 40% (red):</strong> Weak breadth. Avoid sector exposure until breadth recovers.</div></div>
+      </div>
+      ${allEtfLegend()}
+      <div class="tip-section">
+        <div class="tip-section-label">The key insight</div>
+        <div class="tip-section-text">If XLK is up 5% but only 35% of tech stocks are above their 50DMA, it's being driven by 2–3 mega-caps (like Apple or Nvidia). That's a <strong>"narrowing rally"</strong> — fragile and often a warning sign.</div>
+      </div>
+      <div class="tip-warning">⚠ Breadth is a leading indicator of sustainability. Strong price + weak breadth = warning. Weak price + rising breadth = opportunity.</div>
+    `
+  },
+  picks:{
+    title:'TOP ROTATION PICKS GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">Individual stocks ranked by a composite score weighing their position in a rotation-favored sector, relative valuation, momentum, and analyst estimates. Higher score = stronger alignment with the current rotation thesis.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Understanding the score</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Score 85–100:</strong> High conviction. Sector tailwind + strong fundamentals + momentum aligned. Core position candidate.</div></div>
+        <div class="tip-rule amber"><div class="tip-rule-text"><strong>Score 70–84:</strong> Good candidate. One or two factors slightly weaker. Good for diversified exposure.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Score below 70:</strong> Speculative pick. In the right sector but less compelling fundamentals. Smaller sizing recommended.</div></div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Practical advice for beginners</div>
+        <div class="tip-section-text">Rather than picking individual stocks, start by <strong>buying the sector ETF</strong> instead. For example, if Energy (XLE) is the rotation target, buy XLE first — it instantly diversifies you across all energy companies and is much less risky than a single stock.</div>
+      </div>
+      ${etfLegend(['XLE','XLF','XLI','XLB','XLK','XLY'])}
+      <div class="tip-section">
+        <div class="tip-section-label">Position sizing suggestion</div>
+        <div class="tip-section-text">A common rule: never put more than <strong>5% of your portfolio</strong> in a single stock. For sector ETFs, 10–15% per sector is reasonable. Diversification across 3–4 rotation plays reduces your risk significantly.</div>
+      </div>
+      <div class="tip-warning">⚠ This is not financial advice. Upside estimates are model outputs, not guarantees. Always do your own research before investing.</div>
+    `
+  },
+  rsi:{
+    title:'RSI GAUGES GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The <strong>Relative Strength Index (RSI)</strong> for each sector ETF, on a 0–100 scale. RSI measures how fast and how much prices have moved — it tells you if a sector is "overbought" (likely to pull back) or "oversold" (potentially ready to bounce).</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">The zones</div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>RSI above 70 = Overbought:</strong> The sector rose too fast. Avoid chasing — wait for RSI to cool below 60 before new entries.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>RSI 45–65 = Healthy trend:</strong> Normal range during an uptrend. Good time to add to existing positions.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>RSI below 30 = Oversold:</strong> Sector beaten down. Often a contrarian buy signal — especially strong when a positive rotation thesis also exists.</div></div>
+      </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLY','XLU'])}
+      <div class="tip-section">
+        <div class="tip-section-label">The ideal rotation entry combo</div>
+        <div class="tip-section-text"><strong>High rotation probability in the table above + RSI below 45 on the destination sector ETF</strong> = money is expected to flow IN, but the sector hasn't moved yet. That's the best risk/reward setup.</div>
+      </div>
+      <div class="tip-warning">⚠ RSI alone is not a buy/sell signal. A sector can stay overbought for months in a strong bull market. Always combine with trend and flow confirmation.</div>
+    `
+  },
+  putcall:{
+    title:'PUT/CALL RATIO GUIDE',
+    body:`
+      <div class="tip-section">
+        <div class="tip-section-label">What you're seeing</div>
+        <div class="tip-section-text">The ratio of <strong>put options to call options</strong> traded on each sector ETF. Options let traders bet on price direction — puts = betting prices will fall, calls = betting prices will rise. This ratio reveals where institutional "smart money" is positioning.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Reading the bars</div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Below 1.0 (green):</strong> More calls than puts — traders are bullish. Institutions buying upside. Rotation-friendly signal.</div></div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Around 1.0 (neutral line):</strong> Balanced sentiment. No strong directional conviction from the options market.</div></div>
+        <div class="tip-rule red"><div class="tip-rule-text"><strong>Above 1.0 (red):</strong> More puts than calls — traders hedging or betting on decline. Possible selling pressure ahead.</div></div>
+      </div>
+      ${etfLegend(['XLK','XLE','XLF','XLV','XLI','XLP','XLY'])}
+      <div class="tip-section">
+        <div class="tip-section-label">The contrarian angle</div>
+        <div class="tip-section-text">Extreme readings (above 1.4 or below 0.6) can be <strong>contrarian signals</strong>. When everyone is buying puts on a sector, the bad news is often already priced in — a surprise positive catalyst can trigger a sharp rebound.</div>
+      </div>
+      <div class="tip-section">
+        <div class="tip-section-label">Best use case</div>
+        <div class="tip-section-text">Use this to <strong>confirm rotation signals</strong>: if the table says "buy XLE (Energy)" and XLE's put/call ratio is below 0.8, that's two independent signals aligned — much higher confidence.</div>
+      </div>
+      <div class="tip-warning">⚠ Options flow can be used for hedging (not just directional bets), so high put volume doesn't always mean bearishness. Context matters.</div>
+    `
+  },
+  narrative:{
+    title:'AI MARKET NARRATIVE GUIDE',
+    body:`
+      <div class="tip-section"><div class="tip-section-label">What you're seeing</div><div class="tip-section-text">Claude reads the live numbers from every panel on this dashboard and writes a plain-English interpretation — one paragraph per panel. Each paragraph builds on the previous, culminating in a final stock pick recommendation that synthesises all signals.</div></div>
+      <div class="tip-section"><div class="tip-section-label">Does it update on F5 / page refresh?</div>
+        <div class="tip-rule blue"><div class="tip-rule-text"><strong>Yes</strong> — clicking ↻ REFRESH DATA automatically triggers a new analysis of the freshly generated data. The analysis takes 3–5 seconds as Claude processes all panel data in one API call.</div></div>
+      </div>
+      <div class="tip-section"><div class="tip-section-label">What each card covers</div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Macro Environment:</strong> What the rate, yield curve, VIX, and commodity environment means for risk appetite.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Sector Heatmap:</strong> Which sectors are gaining/losing — rotation or broad market move?</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Fund Flows:</strong> Where institutional money is actually moving — the most reliable rotation signal.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Breadth & RSI:</strong> Whether rallies are healthy and broad, or narrow and overbought.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Options Sentiment:</strong> Put/call ratio clues about smart-money positioning.</div></div>
+        <div class="tip-rule purple"><div class="tip-rule-text"><strong>Rotation Signals:</strong> The highest-probability rotation opportunities and their catalysts.</div></div>
+        <div class="tip-rule green"><div class="tip-rule-text"><strong>Final Recommendation:</strong> All signals synthesised into actionable stock picks with confidence and risk caveats.</div></div>
+      </div>
+      <div class="tip-section"><div class="tip-section-label">Key limitation</div><div class="tip-section-text">The narrative quality is <strong>directly tied to the underlying data quality</strong>. Currently the dashboard uses simulated data, so narratives describe simulated conditions. When real data is wired in, this panel becomes genuinely actionable.</div></div>
+      <div class="tip-warning">⚠ AI-generated commentary for educational purposes only. Not financial advice. Always verify independently before investing.</div>
+    `
+  }
+};
+
+// ── TOOLTIP LOGIC ─────────────────────────────────────────────────────────────
+let activeTipKey=null;
+function showTip(key,btn){
+  const popup=document.getElementById('tipPopup');
+  if(activeTipKey===key&&popup.classList.contains('visible')){closeTip();return;}
+  activeTipKey=key;
+  const t=TIPS[key];
+  document.getElementById('tipTitle').textContent=t.title;
+  document.getElementById('tipBody').innerHTML=typeof t.body==='function'?t.body():t.body;
+  popup.classList.add('visible');
+  positionTip(btn,popup);
+}
+function positionTip(btn,popup){
+  const r=btn.getBoundingClientRect();
+  const pw=320;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  // horizontal: prefer aligning left edge with button, push left if overflows right
+  let left=r.left;
+  if(left+pw>vw-8)left=vw-pw-8;
+  if(left<8)left=8;
+  // vertical: prefer below button; if not enough room below, anchor to top of viewport with margin
+  // popup has max-height:82vh so it will scroll internally — just make sure top is within view
+  const maxH=Math.floor(vh*0.82);
+  let top=r.bottom+6;
+  if(top+maxH>vh-8){
+    // try above button
+    top=r.top-maxH-6;
+  }
+  // final clamp: never above top of screen
+  if(top<8)top=8;
+  popup.style.left=left+'px';
+  popup.style.top=top+'px';
+}
+function closeTip(){
+  document.getElementById('tipPopup').classList.remove('visible');
+  activeTipKey=null;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTip();});
+document.addEventListener('click',e=>{
+  const popup=document.getElementById('tipPopup');
+  if(popup.classList.contains('visible')&&!popup.contains(e.target)&&!e.target.classList.contains('tip-btn')){closeTip();}
+});
+
+// ── DATA & BUILD FUNCTIONS ────────────────────────────────────────────────────
+let rsChart,breadthChart,pcChart,selectedSector=0;
+const rsDataCache={}; // keyed by ticker, so same tab always shows same line
+function rand(min,max,dec=1){return parseFloat((Math.random()*(max-min)+min).toFixed(dec));}
+
+function generateSectorData(){
+  SECTORS.forEach(s=>{
+    // Only randomise perf if not already set by a live Yahoo fetch
+    if(!s.live) s.perf = rand(-3,4.5);
+    s.flow=rand(-1.2,2.8);
+    s.rsi=rand(30,75);
+    s.breadth=rand(30,80);
+  });
+}
+function perfColor(v){
+  if(v>=2)return'rgba(34,197,94,0.25)';if(v>=0.5)return'rgba(34,197,94,0.12)';
+  if(v>=-0.5)return'rgba(100,100,120,0.15)';if(v>=-2)return'rgba(239,68,68,0.12)';return'rgba(239,68,68,0.25)';
+}
+function perfTextColor(v){return v>=0.5?'#22c55e':v>=-0.5?'#8892a4':'#ef4444';}
+
+function buildTicker(){
+  const inner=document.getElementById('tickerInner');
+  inner.innerHTML=[...TICKER_DATA,...TICKER_DATA].map(t=>
+    `<div class="ticker-item"><span class="ticker-name">${t.name}</span><span class="ticker-price">${t.price}</span><span class="${t.up?'ticker-chg-up':'ticker-chg-dn'}">${t.chg}</span></div>`
+  ).join('');
+}
+
+function buildSectorGrid(){
+  document.getElementById('sectorGrid').innerHTML=SECTORS.map((s,i)=>`
+    <div class="sector-cell ${i===selectedSector?'selected':''}" style="background:${perfColor(s.perf)}" onclick="selectSector(${i})">
+      <div class="sector-name">${s.ticker}</div>
+      <div class="sector-ticker">${s.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="sector-perf" style="color:${perfTextColor(s.perf)}">${s.perf>=0?'+':''}${s.perf.toFixed(1)}%</div>
+      <div class="sector-flow" style="color:${s.flow>=0?'#22c55e':'#ef4444'}">${s.flow>=0?'▲':'▼'} $${Math.abs(s.flow).toFixed(1)}B</div>
+    </div>`).join('');
+}
+
+function buildMacro(){
+  const sigMap={bull:'sig-bull',bear:'sig-bear',neut:'sig-neut'};
+  const sigLabel={bull:'BULLISH',bear:'BEARISH',neut:'NEUTRAL'};
+  document.getElementById('macroPanel').innerHTML=MACRO_DATA.map(m=>`
+    <div class="macro-row">
+      <span class="macro-label"><i class="fa-solid ${m.icon}"></i>${m.label}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="macro-val" style="color:${m.signal==='bull'?'#22c55e':m.signal==='bear'?'#ef4444':'#f59e0b'}">${m.value}</span>
+        <span class="macro-signal ${sigMap[m.signal]}">${sigLabel[m.signal]}</span>
+      </div>
+    </div>`).join('');
+}
+
+function buildRotations(){
+  document.getElementById('rotationTable').innerHTML=ROTATIONS.map((r,i)=>{
+    const pc=r.prob>=70?'#22c55e':r.prob>=55?'#f59e0b':'#8892a4';
+    return`<tr onclick="openRotationModal(${i})">
+      <td><div class="from-to">
+        <span class="sector-tag" style="background:${r.fromColor}22;color:${r.fromColor};border:0.5px solid ${r.fromColor}44">${r.from}</span>
+        <span class="arrow-icon">→</span>
+        <span class="sector-tag" style="background:${r.toColor}22;color:${r.toColor};border:0.5px solid ${r.toColor}44">${r.to}</span>
+      </div></td>
+      <td><div class="prob-text" style="color:${pc}">${r.prob}%</div><div class="prob-bar"><div class="prob-fill" style="width:${r.prob}%;background:${pc}"></div></div></td>
+      <td><span class="upside-val">${r.upside}</span></td>
+      <td><span class="date-val">${r.date}</span></td>
+      <td style="font-size:10px;color:var(--text2);max-width:140px;line-height:1.4">${r.catalyst}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildTopPicks(){
+  document.getElementById('topPicks').innerHTML=TOP_PICKS.map((p,i)=>`
+    <div class="pick-row">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="pick-rank">#${i+1}</span>
+        <div>
+          <div class="pick-ticker">${p.ticker}</div>
+          <div class="pick-name">${p.name} · ${p.sector}</div>
+          <div class="pick-name" style="color:var(--text3);margin-top:2px">${p.reason}</div>
+        </div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-upside">${p.upside}</div>
+        <div class="pick-score">SCORE ${p.score}/100</div>
+      </div>
+    </div>`).join('');
+}
+
+function buildFlows(){
+  const flows=SECTORS.slice(0,6).map(s=>({name:s.ticker,val:s.flow,color:s.color}));
+  const maxAbs=Math.max(...flows.map(f=>Math.abs(f.val)));
+  document.getElementById('flowPanel').innerHTML=flows.map(f=>{
+    const pct=(Math.abs(f.val)/maxAbs*100).toFixed(0);
+    const pos=f.val>=0;
+    return`<div class="flow-item">
+      <div class="flow-header"><span class="flow-sector">${f.name}</span><span class="flow-amount" style="color:${pos?'#22c55e':'#ef4444'}">${pos?'+':''}\$${f.val.toFixed(2)}B</span></div>
+      <div class="flow-bar-bg"><div class="flow-bar" style="width:${pct}%;background:${pos?'#22c55e':'#ef4444'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function buildGauges(){
+  document.getElementById('gaugeGrid').innerHTML=SECTORS.slice(0,8).map(s=>{
+    const rsi=s.rsi,color=rsi>70?'#ef4444':rsi<30?'#22c55e':rsi>60?'#f59e0b':'#3b82f6';
+    const label=rsi>70?'OVERBOUGHT':rsi<30?'OVERSOLD':rsi>55?'BULLISH':'NEUTRAL';
+    return`<div class="gauge-item">
+      <div class="gauge-label">${s.ticker}</div>
+      <div class="gauge-val" style="color:${color}">${rsi.toFixed(0)}</div>
+      <div class="gauge-sub" style="color:${color}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildCycleSvg(){
+  const svg=document.getElementById('cycleSvg');
+  const cx=120,cy=120,r=88;
+  const phases=[
+    {label:'Recovery',sectors:'Fin, Tech',angle:-135,color:'#22c55e'},
+    {label:'Early Exp.',sectors:'Disc, Mat',angle:-45,color:'#3b82f6'},
+    {label:'Mid Exp.',sectors:'Tech, Ind',angle:45,color:'#a78bfa'},
+    {label:'Late Exp.',sectors:'Energy, Mat',angle:135,color:'#f59e0b'},
+    {label:'Recession',sectors:'Health, Util',angle:180,color:'#ef4444'},
+  ];
+  const cur=2;
+  let h=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="38"/>`;
+  phases.forEach((p,i)=>{
+    const rad=(p.angle-90)*Math.PI/180;
+    const tx=cx+r*Math.cos(rad),ty=cy+r*Math.sin(rad);
+    const dotR=i===cur?8:5,op=i===cur?1:0.4;
+    h+=`<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${dotR}" fill="${p.color}" opacity="${op}"/>`;
+    if(i===cur)h+=`<circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="14" fill="${p.color}" opacity="0.15"/>`;
+    const lx=cx+r*Math.cos(rad)*1.3,ly=cy+r*Math.sin(rad)*1.3;
+    h+=`<text x="${lx.toFixed(1)}" y="${(ly-4).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="${p.color}" opacity="${op}">${p.label}</text>`;
+    h+=`<text x="${lx.toFixed(1)}" y="${(ly+8).toFixed(1)}" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="rgba(255,255,255,0.3)">${p.sectors}</text>`;
+  });
+  h+=`<text x="${cx}" y="${cy-5}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Mid</text>`;
+  h+=`<text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="Instrument Serif,serif" font-size="13" fill="rgba(255,255,255,0.9)">Expansion</text>`;
+  svg.innerHTML=h;
+}
+
+function getRsLabels(){
+  // Returns 12 weekly labels ending on the most recent Friday (week-close dates)
+  // Each label = "DD Mon" e.g. "08 May", representing the Friday that closed that week
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Use actual today's date from browser
+  const now=new Date();
+  // Find the most recent Friday (getDay: 0=Sun,1=Mon,...,5=Fri,6=Sat)
+  const dow=now.getDay();
+  // daysBack: how many days to go back to reach Friday
+  // Fri(5)->0, Sat(6)->1, Sun(0)->2, Mon(1)->3, Tue(2)->4, Wed(3)->5, Thu(4)->6
+  const daysBack=dow===5?0:dow===6?1:(dow+2)%7===0?2:dow+2;
+  // Simpler: offset table
+  const offsets=[2,3,4,5,6,0,1]; // Sun=0 -> 2, Mon=1 -> 3, ..., Fri=5 -> 0, Sat=6 -> 1
+  const lastFriday=new Date(now);
+  lastFriday.setDate(now.getDate()-offsets[dow]);
+  lastFriday.setHours(0,0,0,0);
+  const labels=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(lastFriday);
+    d.setDate(lastFriday.getDate()-(i*7));
+    labels.push(d.getDate()+' '+months[d.getMonth()]);
+  }
+  return labels;
+}
+async function buildRsChart(){
+  const s=SECTORS[selectedSector];
+  // Try live Yahoo RS data first; fall back to simulated cache
+  if(!rsDataCache[s.ticker]){
+    const live = await loadRsChartLive(selectedSector);
+    if(!live) rsDataCache[s.ticker]=Array.from({length:12},()=>rand(-8,8));
+  }
+  const data=rsDataCache[s.ticker];
+  if(rsChart)rsChart.destroy();
+  rsChart=new Chart(document.getElementById('rsChart'),{type:'line',data:{
+    labels:getRsLabels(),
+    datasets:[
+      {label:`${s.ticker} vs SPY`,data,borderColor:s.color,backgroundColor:s.color+'18',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:s.color,borderWidth:2},
+      {label:'Zero',data:Array(12).fill(0),borderColor:'rgba(255,255,255,0.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v+'%'}}
+    }}
+  });
+}
+
+function buildBreadthChart(){
+  const labels=SECTORS.map(s=>s.ticker),data=SECTORS.map(s=>s.breadth);
+  const colors=SECTORS.map(s=>s.breadth>60?'#22c55e':s.breadth<40?'#ef4444':'#3b82f6');
+  if(breadthChart)breadthChart.destroy();
+  breadthChart=new Chart(document.getElementById('breadthChart'),{type:'bar',data:{labels,datasets:[{label:'% Above 50DMA',data,backgroundColor:colors,borderRadius:3,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:8},maxRotation:0}},
+    y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v+'%'},min:0,max:100}}}
+  });
+}
+
+function buildPcChart(){
+  const labels=SECTORS.slice(0,7).map(s=>s.ticker);
+  const data=labels.map(()=>rand(0.6,1.4));
+  const colors=data.map(v=>v>1.0?'#ef4444':'#22c55e');
+  if(pcChart)pcChart.destroy();
+  pcChart=new Chart(document.getElementById('pcChart'),{type:'bar',data:{labels,datasets:[
+    {label:'Put/Call',data:data.map(v=>parseFloat(v.toFixed(2))),backgroundColor:colors,borderRadius:3,borderWidth:0},
+    {label:'Neutral',data:Array(7).fill(1.0),borderColor:'rgba(255,255,255,0.25)',borderWidth:1,borderDash:[3,3],type:'line',pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+  scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9}}},
+  y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d5666',font:{family:'DM Mono',size:9},callback:v=>v.toFixed(1)},min:0.4,max:1.6}}}
+  });
+}
+
+function buildRsTabs(){
+  // Show ALL 11 sectors, not just the first 6
+  document.getElementById('rsChartTabs').innerHTML=SECTORS.map((s,i)=>
+    `<button class="chart-tab ${i===selectedSector?'active':''}" onclick="selectSector(${i})">${s.ticker}</button>`
+  ).join('');
+}
+
+function selectSector(i){selectedSector=i;buildSectorGrid();buildRsTabs();buildRsChart();}
+
+function openRotationModal(i){
+  const r=ROTATIONS[i];
+  document.getElementById('modalContent').innerHTML=`
+    <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-title">${r.from} → ${r.to}</div>
+    <div class="modal-sub">ROTATION SIGNAL · ${r.date}</div>
+    <div class="modal-grid">
+      <div class="modal-stat"><div class="modal-stat-label">PROBABILITY</div><div class="modal-stat-val" style="color:${r.prob>=70?'#22c55e':r.prob>=55?'#f59e0b':'#8892a4'}">${r.prob}%</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">EXPECTED UPSIDE</div><div class="modal-stat-val" style="color:#22c55e">${r.upside}</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">EXPECTED DATE</div><div class="modal-stat-val" style="font-size:13px;padding-top:4px">${r.date}</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">CATALYST</div><div class="modal-stat-val" style="font-size:11px;padding-top:4px;line-height:1.5">${r.catalyst}</div></div>
+    </div>
+    <div class="modal-picks-title">TOP STOCK PICKS</div>
+    <div class="modal-picks">${r.picks.map(p=>`<span class="modal-pick-chip">${p}</span>`).join('')}</div>
+    <div class="modal-rationale">${r.rationale}</div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function updateClock(){document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})+' ET';}
+
+function refreshAll(){
+  Object.keys(rsDataCache).forEach(k=>delete rsDataCache[k]);
+  SECTORS.forEach(s=>{ s.live=false; s.perf=null; });
+  generateSectorData();
+  buildSectorGrid();buildTicker();buildFlows();buildGauges();buildBreadthChart();buildPcChart();buildRsChart();
+  // Re-fetch live data + regenerate narrative
+  generateNarrative();
+}
+
+// ── AI NARRATIVE ─────────────────────────────────────────────────────────────
+function buildDashboardSnapshot(){
+  // Serialise current dashboard state into a structured prompt for Claude
+  const topSectors = [...SECTORS].sort((a,b)=>b.perf-a.perf).slice(0,3).map(s=>`${s.ticker}(${s.name}) +${s.perf.toFixed(1)}%`).join(', ');
+  const botSectors = [...SECTORS].sort((a,b)=>a.perf-b.perf).slice(0,3).map(s=>`${s.ticker}(${s.name}) ${s.perf.toFixed(1)}%`).join(', ');
+  const topFlows = [...SECTORS].sort((a,b)=>b.flow-a.flow).slice(0,3).map(s=>`${s.ticker} +$${s.flow.toFixed(1)}B`).join(', ');
+  const botFlows = [...SECTORS].sort((a,b)=>a.flow-b.flow).slice(0,3).map(s=>`${s.ticker} -$${Math.abs(s.flow).toFixed(1)}B`).join(', ');
+  const overbought = SECTORS.filter(s=>s.rsi>65).map(s=>`${s.ticker}(RSI ${s.rsi.toFixed(0)})`).join(', ')||'none';
+  const oversold   = SECTORS.filter(s=>s.rsi<40).map(s=>`${s.ticker}(RSI ${s.rsi.toFixed(0)})`).join(', ')||'none';
+  const strongBreadth = SECTORS.filter(s=>s.breadth>60).map(s=>`${s.ticker}(${s.breadth.toFixed(0)}%)`).join(', ')||'none';
+  const weakBreadth   = SECTORS.filter(s=>s.breadth<40).map(s=>`${s.ticker}(${s.breadth.toFixed(0)}%)`).join(', ')||'none';
+  const macroSummary = MACRO_DATA.map(m=>`${m.label}: ${m.value} (${m.signal})`).join(' | ');
+  const rotSummary = ROTATIONS.map(r=>`${r.from}→${r.to} prob:${r.prob}% upside:${r.upside} catalyst:${r.catalyst}`).join('; ');
+  const picksSummary = TOP_PICKS.map(p=>`${p.ticker}(${p.sector}, score:${p.score}, upside:${p.upside}, reason:${p.reason})`).join('; ');
+  const cyclePhase = document.getElementById('cycleLabel').textContent;
+
+  return `You are a senior portfolio strategist writing a market commentary for a sector rotation dashboard. The dashboard is showing SIMULATED data for educational purposes — make this clear once at the start, then write as if the data were real.
+
+CURRENT DATA SNAPSHOT:
+Business cycle phase: ${cyclePhase}
+
+MACRO INDICATORS: ${macroSummary}
+
+SECTOR HEATMAP (weekly performance):
+  Top performers: ${topSectors}
+  Worst performers: ${botSectors}
+
+ETF FUND FLOWS (5-day net):
+  Inflows: ${topFlows}
+  Outflows: ${botFlows}
+
+RSI GAUGES:
+  Overbought (RSI>65): ${overbought}
+  Oversold (RSI<40): ${oversold}
+
+SECTOR BREADTH (% stocks above 50DMA):
+  Strong breadth (>60%): ${strongBreadth}
+  Weak breadth (<40%): ${weakBreadth}
+
+ROTATION SIGNALS: ${rotSummary}
+
+TOP STOCK PICKS: ${picksSummary}
+
+Write exactly 7 paragraphs in this order. Each paragraph should be 3-5 sentences. Use specific numbers from the data. Write in a confident but measured tone — like a sell-side morning note.
+
+Paragraph 1 — MACRO ENVIRONMENT: Interpret the macro indicators. What is the interest rate environment signalling? What does the yield curve, VIX, credit spreads, and oil price combination mean for risk appetite and sector positioning?
+
+Paragraph 2 — SECTOR HEATMAP: What does the weekly performance pattern reveal? Is this broad-based or concentrated? Does it look like rotation (some sectors up, others down) or a market-wide move? Name specific ETFs.
+
+Paragraph 3 — FUND FLOWS: Where is institutional money actually moving? Contrast the inflows and outflows. Are the flows confirming or contradicting the price signals from the heatmap?
+
+Paragraph 4 — BREADTH & RSI: Are the sector rallies healthy? Call out any overbought sectors to avoid chasing and any oversold sectors that may represent opportunity. Does breadth confirm the heatmap leaders?
+
+Paragraph 5 — OPTIONS SENTIMENT: Based on put/call ratios (which you should infer from overall market conditions given the data), describe what smart money appears to be doing — hedging, accumulating, or neutral?
+
+Paragraph 6 — ROTATION SIGNALS: Summarise the top 2-3 highest-probability rotation opportunities. Name the from/to sectors, probability, expected upside, and the key catalyst driving each.
+
+Paragraph 7 — FINAL RECOMMENDATION (bold header): This is the synthesis paragraph. Name the 3-4 highest-conviction stock picks, explain why each is supported by multiple signals from the panels above (not just one signal), give a rough time horizon, and end with one honest risk caveat.
+
+Format: Return plain text paragraphs separated by double newlines. Start each paragraph with its bold label in ALL CAPS followed by a colon and space, like: MACRO ENVIRONMENT: Then the paragraph text. No markdown, no bullet points, no headers beyond the paragraph labels.`;
+}
+
+// ── Core API call helper — handles auth errors visibly ───────────────────────
+async function callClaude(payload){
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if(!response.ok){
+    const msg = data?.error?.message || `HTTP ${response.status}`;
+    if(response.status===401||response.status===403){
+      setKeyStatus('error','API key rejected ('+response.status+') — clear and re-enter.');
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// ── Build a simple narrative-only prompt from current dashboard state ─────────
+function buildNarrativeOnlyPrompt(){
+  const snap = buildDashboardSnapshot();
+  return snap + `
+
+IMPORTANT: Do NOT use web search. Use only the data provided above.
+Write the 7 paragraphs as instructed. Return plain text only — no JSON, no markdown, no code blocks.`;
+}
+
+// ── Try to fetch live market data via web search, return parsed JSON or null ──
+async function tryFetchLiveData(bodyEl){
+  bodyEl.querySelector('.narrative-loading-text').textContent =
+    'Step 1/2 — Searching for live market data…';
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 30,
-        messages: [{ role: 'user', content: 'Say "API works" and nothing else.' }]
-      })
+    const data = await callClaude({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:3000,
+      tools:[{type:'web_search_20250305', name:'web_search'}],
+      tool_choice:{type:'auto'},
+      messages:[{role:'user', content: buildLiveDataPrompt()}]
     });
 
-    log('HTTP status: ' + response.status + ' ' + response.statusText);
+    // The model may stop with stop_reason='tool_use' (needs another turn) or 'end_turn'
+    // Collect all text from all content blocks across potential multi-turn
+    const allText = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
 
-    const data = await response.json();
-    log('Raw response: ' + JSON.stringify(data, null, 2));
-
-    if(response.ok){
-      const text = data?.content?.[0]?.text || '(no text)';
-      log('');
-      log('✓ SUCCESS! API responded: ' + text, 'ok');
-      log('✓ Your key works. You can now use the dashboard.', 'ok');
-    } else {
-      log('');
-      log('✗ API returned error: ' + (data?.error?.message || 'unknown'), 'err');
-      log('Error type: ' + (data?.error?.type || 'unknown'), 'err');
+    // If stop_reason is tool_use, we need to send tool results back
+    // For simplicity: just try to parse JSON from whatever text we got
+    const jsonMatch = allText.match(/\{[\s\S]{20,}"narrative"[\s\S]*\}/);
+    if(jsonMatch){
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed;
     }
-
-  } catch(err) {
-    log('');
-    log('✗ FETCH FAILED (network/CORS error)', 'err');
-    log('Error: ' + err.message, 'err');
-    log('');
-    log('This usually means:', 'info');
-    log('  - You opened the file as file:// (double-click)', 'info');
-    log('  - Fix: run  python -m http.server 8080  in this folder', 'info');
-    log('  - Then open: http://localhost:8080/api-test.html', 'info');
+    // web_search worked but returned text format, not JSON — use text as narrative
+    if(allText.length > 200) return {_rawNarrative: allText};
+    return null;
+  } catch(e){
+    // web_search tool not available on this tier, or other error
+    console.warn('Live data fetch failed:', e.message);
+    return null;
   }
 }
 
-// Also test that JS is running at all
-document.addEventListener('DOMContentLoaded', function(){
-  log('✓ JavaScript is running fine.', 'ok');
-  log('✓ Page loaded at: ' + new Date().toLocaleTimeString(), 'ok');
-  log('Paste your API key above and click TEST.', 'info');
-  log('');
-});
+async function generateNarrative(){
+  const btn  = document.getElementById('narrativeBtn');
+  const body = document.getElementById('narrativeBody');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ANALYSING...';
+
+  // Guard: need API key
+  if(!anthropicApiKey){
+    body.innerHTML = `<div class="narrative-empty">
+      <i class="fa-solid fa-key"></i>
+      Enter your Anthropic API key in the panel above to generate analysis.
+    </div>`;
+    btn.disabled=false;
+    btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS';
+    return;
+  }
+
+  body.innerHTML = `<div class="narrative-loading">
+    <div class="narrative-spinner"></div>
+    <div class="narrative-loading-text">Connecting to Claude API…</div>
+  </div>`;
+
+  try {
+    // ── Phase 1: Attempt live data fetch (gracefully skipped if web_search unavailable) ──
+    const loadingText = body.querySelector('.narrative-loading-text');
+    let liveData = null;
+    try { liveData = await tryFetchLiveData(body); } catch(e){}
+
+    if(liveData && !liveData._rawNarrative){
+      // Apply live market data to panels
+      applyLiveData(liveData);
+      updateDataStatusLive(liveData);
+      generateSectorData();
+      buildSectorGrid(); buildTicker(); buildMacro();
+      buildFlows(); buildGauges(); buildBreadthChart(); buildPcChart(); buildRsChart();
+    }
+
+    // ── Phase 2: Generate narrative (always runs) ──────────────────────────
+    if(loadingText) loadingText.textContent = 'Step 2/2 — Writing market analysis…';
+
+    let narrativeText = '';
+    if(liveData?._rawNarrative){
+      narrativeText = liveData._rawNarrative;
+    } else if(liveData?.narrative){
+      // Already have narrative from Phase 1 JSON
+      const n = liveData.narrative;
+      const cards = [
+        {meta:PARA_META[0], text:n.macro||''},
+        {meta:PARA_META[1], text:n.heatmap||''},
+        {meta:PARA_META[2], text:n.flows||''},
+        {meta:PARA_META[3], text:n.breadth||''},
+        {meta:PARA_META[4], text:n.options||''},
+        {meta:PARA_META[5], text:n.rotation||''},
+        {meta:PARA_META[6], text:n.recommendation||''},
+      ].filter(c=>c.text);
+      renderCards(cards);
+      return; // done
+    } else {
+      // No live data or web_search unavailable — call Claude for narrative only
+      const data2 = await callClaude({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user', content: buildNarrativeOnlyPrompt()}]
+      });
+      narrativeText = (data2.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+      if(!narrativeText) throw new Error('Empty response from API — check your account has credits.');
+    }
+
+    renderNarrative(narrativeText);
+
+  } catch(err){
+    // Show the FULL error visibly so user knows exactly what's wrong
+    const errMsg = err.message || String(err);
+    updateDataStatusError(errMsg);
+    body.innerHTML = `
+      <div style="padding:20px;">
+        <div class="narrative-error" style="text-align:left;padding:14px 16px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> &nbsp;API Error
+          </div>
+          <div style="font-size:12px;line-height:1.6;color:var(--text2);">${errMsg}</div>
+          <div style="margin-top:12px;font-size:10px;color:var(--text3);font-family:var(--mono);">
+            Common fixes:<br>
+            · <strong style="color:var(--text2)">401/403</strong> — Key is wrong or expired. Click CLEAR KEY above and re-enter.<br>
+            · <strong style="color:var(--text2)">529 / overloaded</strong> — Anthropic servers busy. Wait 30s and retry.<br>
+            · <strong style="color:var(--text2)">credit_balance_too_low</strong> — Add credits at console.anthropic.com/settings/billing<br>
+            · <strong style="color:var(--text2)">CORS / network error</strong> — Try opening the file via a local server, not file://
+          </div>
+        </div>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> REGENERATE';
+  }
+}
+
+const PARA_META = [
+  {key:'MACRO ENVIRONMENT',    icon:'fa-landmark',        label:'Macro Environment',    cls:''},
+  {key:'SECTOR HEATMAP',       icon:'fa-th',              label:'Sector Heatmap',       cls:''},
+  {key:'FUND FLOWS',           icon:'fa-money-bill-trend-up', label:'Fund Flows',       cls:''},
+  {key:'BREADTH & RSI',        icon:'fa-wave-square',     label:'Breadth & RSI',        cls:''},
+  {key:'OPTIONS SENTIMENT',    icon:'fa-chess',           label:'Options Sentiment',    cls:''},
+  {key:'ROTATION SIGNALS',     icon:'fa-rotate',          label:'Rotation Signals',     cls:'highlight'},
+  {key:'FINAL RECOMMENDATION', icon:'fa-star',            label:'Final Recommendation', cls:'final-rec'},
+];
+
+function renderNarrative(raw){
+  // Split on double-newline to get paragraphs, then match to PARA_META by label prefix
+  const paragraphs = raw.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 20);
+  const cards = [];
+
+  for(const meta of PARA_META){
+    // Try to find a paragraph that starts with this label (case-insensitive)
+    const labelUpper = meta.key.toUpperCase();
+    let matched = null;
+    for(const para of paragraphs){
+      const first80 = para.substring(0, 80).toUpperCase();
+      if(first80.indexOf(labelUpper) !== -1){
+        // Strip the label prefix from the text
+        const colonIdx = para.indexOf(':');
+        matched = colonIdx !== -1 ? para.slice(colonIdx + 1).trim() : para;
+        // Clean stray markdown
+        matched = matched.replace(/\*\*/g, '').trim();
+        break;
+      }
+    }
+    if(matched) cards.push({meta, text: matched});
+  }
+
+  // If label matching found nothing, just assign paragraphs in order
+  if(cards.length === 0){
+    paragraphs.slice(0, 7).forEach((p, i) => {
+      if(PARA_META[i]){
+        const colonIdx = p.indexOf(':');
+        const text = colonIdx !== -1 && colonIdx < 40 ? p.slice(colonIdx + 1).trim() : p;
+        cards.push({meta: PARA_META[i], text: text.replace(/\*\*/g,'').trim()});
+      }
+    });
+  }
+
+  renderCards(cards);
+}
+
+function renderCards(cards){
+  const body = document.getElementById('narrativeBody');
+  if(!cards.length){ body.innerHTML='<div class="narrative-error">Could not parse narrative. Try regenerating.</div>'; return; }
+
+  const top = cards.slice(0, 4);   // row 1: macro, heatmap, flows, breadth
+  const bot = cards.slice(4, 6);   // row 2: options, rotation
+  const fin = cards.slice(6);      // full-width: final rec
+
+  const cardHtml = (c) => `
+    <div class="narrative-card ${c.meta.cls}">
+      <div class="narrative-card-label"><i class="fa-solid ${c.meta.icon}"></i>${c.meta.label.toUpperCase()}</div>
+      <div class="narrative-card-text">${c.text}</div>
+    </div>`;
+
+  let html = `<div class="narrative-grid">${top.map(cardHtml).join('')}</div>`;
+  if(bot.length) html += `<div class="narrative-grid-bottom">${bot.map(cardHtml).join('')}${fin.map(c=>`
+    <div class="narrative-card final-rec">
+      <div class="narrative-card-label"><i class="fa-solid ${c.meta.icon}"></i>${c.meta.label.toUpperCase()}</div>
+      <div class="narrative-card-text">${c.text}</div>
+    </div>`).join('')}</div>`;
+  else if(fin.length) html += fin.map(cardHtml).join('');
+
+  body.innerHTML = html;
+}
+
+function init(){
+  initApiKey();
+  generateSectorData();buildTicker();buildSectorGrid();buildMacro();buildRotations();buildTopPicks();
+  buildFlows();buildGauges();buildCycleSvg();buildRsTabs();buildBreadthChart();buildPcChart();
+  buildRsChart();
+  updateClock();
+  setInterval(updateClock,1000);
+  // Only auto-generate narrative if we already have an API key
+  if(anthropicApiKey) generateNarrative();
+}
+window.onload=init;
 </script>
 </body>
 </html>
