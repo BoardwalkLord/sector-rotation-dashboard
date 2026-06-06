@@ -1472,7 +1472,7 @@ async function tryFetchLiveData(bodyEl){
     'Step 1/2 — Searching for live market data…';
   try {
     const data = await callClaude({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-sonnet-4-6',
       max_tokens:3000,
       tools:[{type:'web_search_20250305', name:'web_search'}],
       tool_choice:{type:'auto'},
@@ -1560,7 +1560,7 @@ async function generateNarrative(){
     } else {
       // No live data or web_search unavailable — call Claude for narrative only
       const data2 = await callClaude({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:2000,
         messages:[{role:'user', content: buildNarrativeOnlyPrompt()}]
       });
