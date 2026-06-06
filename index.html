@@ -494,9 +494,13 @@
       </div>
       <div class="apikey-row">
         <input class="apikey-input" id="apikeyInput" type="password"
-          placeholder="sk-ant-api03-…  (paste your Anthropic API key here)">
+          placeholder="sk-ant-api03-…  (paste your Anthropic API key here)"
+          onkeydown="if(event.key==='Enter') saveApiKey()"
+          oninput="document.getElementById('apikeyValidationMsg').style.display='none'">
         <button class="apikey-btn" onclick="saveApiKey()">CONNECT</button>
+        <button onclick="toggleKeyVisibility()" id="eyeBtn" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide key">👁</button>
       </div>
+      <div id="apikeyValidationMsg" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);border-radius:5px;font-size:11px;color:#ef4444;font-family:var(--mono);"></div>
       <div class="apikey-note">⚡ Key is saved in your browser. One-time setup — persists across refreshes.</div>
       <div class="apikey-status" id="apikeyStatus" style="display:none">
         <div class="apikey-status-dot" id="apikeyStatusDot"></div>
@@ -579,14 +583,18 @@ let anthropicApiKey = localStorage.getItem('anthropicApiKey') || '';
 
 function saveApiKey(){
   const val = document.getElementById('apikeyInput').value.trim();
-  if(!val.startsWith('sk-ant-')){
-    setKeyStatus('error','Key must start with sk-ant-  — check you copied it correctly.');
+  // Accept any key starting with 'sk-' (Anthropic format, old or new)
+  if(!val || !val.startsWith('sk-')){
+    document.getElementById('apikeyValidationMsg').textContent =
+      '⚠ Key must start with  sk-  — check you copied the full key from console.anthropic.com';
+    document.getElementById('apikeyValidationMsg').style.display = 'block';
     return;
   }
+  document.getElementById('apikeyValidationMsg').style.display = 'none';
   anthropicApiKey = val;
   localStorage.setItem('anthropicApiKey', val);
   document.getElementById('apikeyPanel').classList.add('hidden');
-  setKeyStatus('ok','Connected · key saved in browser');
+  setKeyStatus('ok','Connected · key saved in browser storage');
   generateNarrative();
 }
 
@@ -594,8 +602,14 @@ function clearApiKey(){
   anthropicApiKey = '';
   localStorage.removeItem('anthropicApiKey');
   document.getElementById('apikeyInput').value = '';
+  document.getElementById('apikeyValidationMsg').style.display = 'none';
   document.getElementById('apikeyPanel').classList.remove('hidden');
   setKeyStatus('','');
+}
+
+function toggleKeyVisibility(){
+  const input = document.getElementById('apikeyInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
 }
 
 function setKeyStatus(type, msg){
