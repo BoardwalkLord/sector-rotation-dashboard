@@ -1445,104 +1445,162 @@ Paragraph 7 — FINAL RECOMMENDATION (bold header): This is the synthesis paragr
 Format: Return plain text paragraphs separated by double newlines. Start each paragraph with its bold label in ALL CAPS followed by a colon and space, like: MACRO ENVIRONMENT: Then the paragraph text. No markdown, no bullet points, no headers beyond the paragraph labels.`;
 }
 
+// ── Core API call helper — handles auth errors visibly ───────────────────────
+async function callClaude(payload){
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if(!response.ok){
+    const msg = data?.error?.message || `HTTP ${response.status}`;
+    if(response.status===401||response.status===403){
+      setKeyStatus('error','API key rejected ('+response.status+') — clear and re-enter.');
+    }
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// ── Build a simple narrative-only prompt from current dashboard state ─────────
+function buildNarrativeOnlyPrompt(){
+  const snap = buildDashboardSnapshot();
+  return snap + `
+
+IMPORTANT: Do NOT use web search. Use only the data provided above.
+Write the 7 paragraphs as instructed. Return plain text only — no JSON, no markdown, no code blocks.`;
+}
+
+// ── Try to fetch live market data via web search, return parsed JSON or null ──
+async function tryFetchLiveData(bodyEl){
+  bodyEl.querySelector('.narrative-loading-text').textContent =
+    'Step 1/2 — Searching for live market data…';
+  try {
+    const data = await callClaude({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:3000,
+      tools:[{type:'web_search_20250305', name:'web_search'}],
+      tool_choice:{type:'auto'},
+      messages:[{role:'user', content: buildLiveDataPrompt()}]
+    });
+
+    // The model may stop with stop_reason='tool_use' (needs another turn) or 'end_turn'
+    // Collect all text from all content blocks across potential multi-turn
+    const allText = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+
+    // If stop_reason is tool_use, we need to send tool results back
+    // For simplicity: just try to parse JSON from whatever text we got
+    const jsonMatch = allText.match(/\{[\s\S]{20,}"narrative"[\s\S]*\}/);
+    if(jsonMatch){
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed;
+    }
+    // web_search worked but returned text format, not JSON — use text as narrative
+    if(allText.length > 200) return {_rawNarrative: allText};
+    return null;
+  } catch(e){
+    // web_search tool not available on this tier, or other error
+    console.warn('Live data fetch failed:', e.message);
+    return null;
+  }
+}
+
 async function generateNarrative(){
   const btn  = document.getElementById('narrativeBtn');
   const body = document.getElementById('narrativeBody');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> FETCHING LIVE DATA & ANALYSING...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ANALYSING...';
 
   // Guard: need API key
   if(!anthropicApiKey){
-    body.innerHTML = `<div class="narrative-empty"><i class="fa-solid fa-key"></i>Enter your Anthropic API key in the panel above to fetch live market data and generate analysis.</div>`;
-    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS';
+    body.innerHTML = `<div class="narrative-empty">
+      <i class="fa-solid fa-key"></i>
+      Enter your Anthropic API key in the panel above to generate analysis.
+    </div>`;
+    btn.disabled=false;
+    btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS';
     return;
   }
 
   body.innerHTML = `<div class="narrative-loading">
     <div class="narrative-spinner"></div>
-    <div class="narrative-loading-text">Claude is searching for live market data and writing your analysis…</div>
+    <div class="narrative-loading-text">Connecting to Claude API…</div>
   </div>`;
 
   try {
-    // ── Phase 1: Ask Claude to fetch live data + write narrative in one call ──
-    const livePrompt = buildLiveDataPrompt();
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4000,
-        tools:[{type:'web_search_20250305', name:'web_search'}],
-        messages:[{role:'user', content: livePrompt}]
-      })
-    });
-    if(!response.ok){
-      const errBody = await response.json().catch(()=>({}));
-      const errMsg = errBody?.error?.message || `HTTP ${response.status}`;
-      if(response.status===401){
-        setKeyStatus('error','Invalid API key — check and re-enter above.');
-        clearApiKey();
-      }
-      throw new Error(errMsg);
+    // ── Phase 1: Attempt live data fetch (gracefully skipped if web_search unavailable) ──
+    const loadingText = body.querySelector('.narrative-loading-text');
+    let liveData = null;
+    try { liveData = await tryFetchLiveData(body); } catch(e){}
+
+    if(liveData && !liveData._rawNarrative){
+      // Apply live market data to panels
+      applyLiveData(liveData);
+      updateDataStatusLive(liveData);
+      generateSectorData();
+      buildSectorGrid(); buildTicker(); buildMacro();
+      buildFlows(); buildGauges(); buildBreadthChart(); buildPcChart(); buildRsChart();
     }
-    const data = await response.json();
 
-    // ── Phase 2: Extract JSON from response (may follow tool_use blocks) ──
-    const textBlocks = (data.content || []).filter(b=>b.type==='text').map(b=>b.text).join('');
-    let parsed = null;
-    try {
-      // Find JSON object in the response
-      const jsonMatch = textBlocks.match(/\{[\s\S]*"narrative"[\s\S]*\}/);
-      if(jsonMatch){
-        parsed = JSON.parse(jsonMatch[0]);
-      }
-    } catch(e){ console.warn('JSON parse failed:', e.message); }
+    // ── Phase 2: Generate narrative (always runs) ──────────────────────────
+    if(loadingText) loadingText.textContent = 'Step 2/2 — Writing market analysis…';
 
-    if(parsed){
-      // ── Phase 3: Apply live data to dashboard panels ──
-      applyLiveData(parsed);
-      updateDataStatusLive(parsed);
-      generateSectorData(); // fill simulated fields (flow, rsi, breadth) without overwriting live perf
-      buildSectorGrid();
-      buildTicker();
-      buildMacro();
-      buildFlows();
-      buildGauges();
-      buildBreadthChart();
-      buildPcChart();
-      buildRsChart();
-
-      // ── Phase 4: Render narrative cards from parsed.narrative ──
-      if(parsed.narrative){
-        const n = parsed.narrative;
-        const cards = [
-          {meta:PARA_META[0], text:n.macro||''},
-          {meta:PARA_META[1], text:n.heatmap||''},
-          {meta:PARA_META[2], text:n.flows||''},
-          {meta:PARA_META[3], text:n.breadth||''},
-          {meta:PARA_META[4], text:n.options||''},
-          {meta:PARA_META[5], text:n.rotation||''},
-          {meta:PARA_META[6], text:n.recommendation||''},
-        ].filter(c=>c.text);
-        renderCards(cards);
-      }
+    let narrativeText = '';
+    if(liveData?._rawNarrative){
+      narrativeText = liveData._rawNarrative;
+    } else if(liveData?.narrative){
+      // Already have narrative from Phase 1 JSON
+      const n = liveData.narrative;
+      const cards = [
+        {meta:PARA_META[0], text:n.macro||''},
+        {meta:PARA_META[1], text:n.heatmap||''},
+        {meta:PARA_META[2], text:n.flows||''},
+        {meta:PARA_META[3], text:n.breadth||''},
+        {meta:PARA_META[4], text:n.options||''},
+        {meta:PARA_META[5], text:n.rotation||''},
+        {meta:PARA_META[6], text:n.recommendation||''},
+      ].filter(c=>c.text);
+      renderCards(cards);
+      return; // done
     } else {
-      // Fallback: treat entire response as narrative text (old behaviour)
-      updateDataStatusError('Could not parse structured data — narrative only');
-      renderNarrative(textBlocks);
+      // No live data or web_search unavailable — call Claude for narrative only
+      const data2 = await callClaude({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user', content: buildNarrativeOnlyPrompt()}]
+      });
+      narrativeText = (data2.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+      if(!narrativeText) throw new Error('Empty response from API — check your account has credits.');
     }
+
+    renderNarrative(narrativeText);
+
   } catch(err){
-    updateDataStatusError(err.message);
-    body.innerHTML = `<div class="narrative-error">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      &nbsp;Could not connect to Claude API.<br>
-      <small style="color:var(--text3);margin-top:6px;display:block;">${err.message}</small>
-    </div>`;
+    // Show the FULL error visibly so user knows exactly what's wrong
+    const errMsg = err.message || String(err);
+    updateDataStatusError(errMsg);
+    body.innerHTML = `
+      <div style="padding:20px;">
+        <div class="narrative-error" style="text-align:left;padding:14px 16px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> &nbsp;API Error
+          </div>
+          <div style="font-size:12px;line-height:1.6;color:var(--text2);">${errMsg}</div>
+          <div style="margin-top:12px;font-size:10px;color:var(--text3);font-family:var(--mono);">
+            Common fixes:<br>
+            · <strong style="color:var(--text2)">401/403</strong> — Key is wrong or expired. Click CLEAR KEY above and re-enter.<br>
+            · <strong style="color:var(--text2)">529 / overloaded</strong> — Anthropic servers busy. Wait 30s and retry.<br>
+            · <strong style="color:var(--text2)">credit_balance_too_low</strong> — Add credits at console.anthropic.com/settings/billing<br>
+            · <strong style="color:var(--text2)">CORS / network error</strong> — Try opening the file via a local server, not file://
+          </div>
+        </div>
+      </div>`;
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> REGENERATE';
