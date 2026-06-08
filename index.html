@@ -538,24 +538,66 @@
   <div class="apikey-panel" id="apikeyPanel">
     <div class="apikey-icon">🔑</div>
     <div class="apikey-content">
-      <div class="apikey-title">Connect to Claude AI for Live Data &amp; Analysis</div>
+      <div class="apikey-title">⚙ Data Source Settings</div>
       <div class="apikey-desc">
-        Connect up to three free data sources below — each is optional and independent. All keys are saved in your browser only and sent solely to their own API servers. You can reopen this panel anytime via the <strong style="color:var(--text1);">⚙ DATA SOURCES</strong> button in the header.
+        Connect up to three free data sources — each is optional and independent. Keys are saved in your browser only and sent solely to their own API servers. Reopen this panel anytime via <strong style="color:var(--text1);">⚙ DATA SOURCES</strong> in the header.
       </div>
+
+      <!-- 1. Anthropic -->
+      <div style="margin-bottom:14px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--text3);margin-bottom:6px;text-transform:uppercase;">
+          1 · Anthropic API key — powers the AI Narrative panel &nbsp;
+          <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue);text-decoration:none;">Get free key →</a>
+          <span style="color:var(--text3);"> (~$5 credit, no auto-charge)</span>
+        </div>
+        <div class="apikey-row">
+          <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-api03-…"
+            onkeydown="if(event.key==='Enter') saveAllKeys()"
+            oninput="clearKeyMsg()">
+          <button onclick="toggleKeyVisibility('apikeyInput')" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide">👁</button>
+        </div>
+      </div>
+
+      <!-- 2. Alpha Vantage -->
+      <div style="margin-bottom:14px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--text3);margin-bottom:6px;text-transform:uppercase;">
+          2 · Alpha Vantage API key — live Sector Heatmap &amp; RSI Gauges &nbsp;
+          <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--blue);text-decoration:none;">Get free key →</a>
+          <span style="color:var(--text3);"> (free, instant, 25 calls/day)</span>
+        </div>
+        <div class="apikey-row">
+          <input class="apikey-input" id="avKeyInput" type="password" placeholder="e.g. ABCDE12345FGHIJ"
+            onkeydown="if(event.key==='Enter') saveAllKeys()"
+            oninput="clearKeyMsg()">
+          <button onclick="toggleKeyVisibility('avKeyInput')" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide">👁</button>
+        </div>
+      </div>
+
+      <!-- 3. FRED -->
+      <div style="margin-bottom:14px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--text3);margin-bottom:6px;text-transform:uppercase;">
+          3 · FRED API key — live Macro Indicators (Fed rate, VIX, yield curve, CPI…) &nbsp;
+          <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" style="color:var(--blue);text-decoration:none;">Get free key →</a>
+          <span style="color:var(--text3);"> (free, unlimited, Federal Reserve data)</span>
+        </div>
+        <div class="apikey-row">
+          <input class="apikey-input" id="fredKeyInput" type="password" placeholder="e.g. abcd1234efgh5678abcd1234efgh5678"
+            onkeydown="if(event.key==='Enter') saveAllKeys()"
+            oninput="clearKeyMsg()">
+          <button onclick="toggleKeyVisibility('fredKeyInput')" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide">👁</button>
+        </div>
+      </div>
+
+      <div id="apikeyValidationMsg" style="display:none;margin-bottom:10px;padding:6px 10px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);border-radius:5px;font-size:11px;color:#ef4444;font-family:var(--mono);"></div>
+
       <div class="apikey-row">
-        <input class="apikey-input" id="apikeyInput" type="password"
-          placeholder="sk-ant-api03-…  (paste your Anthropic API key here)"
-          onkeydown="if(event.key==='Enter') saveApiKey()"
-          oninput="document.getElementById('apikeyValidationMsg').style.display='none'">
-        <button class="apikey-btn" onclick="saveApiKey()">CONNECT</button>
-        <button onclick="toggleKeyVisibility()" id="eyeBtn" style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--text2);font-size:12px;" title="Show/hide key">👁</button>
+        <button class="apikey-btn" onclick="saveAllKeys()">SAVE &amp; LOAD LIVE DATA</button>
+        <button onclick="clearAllKeys()" style="font-family:var(--mono);font-size:10px;padding:7px 14px;border-radius:6px;cursor:pointer;background:transparent;border:0.5px solid var(--border2);color:var(--text3);">CLEAR ALL</button>
       </div>
-      <div id="apikeyValidationMsg" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.3);border-radius:5px;font-size:11px;color:#ef4444;font-family:var(--mono);"></div>
-      <div class="apikey-note">⚡ Key is saved in your browser. One-time setup — persists across refreshes.</div>
-      <div class="apikey-status" id="apikeyStatus" style="display:none">
+      <div class="apikey-note" style="margin-top:8px;">⚡ Keys never leave your browser except to their own API servers.</div>
+      <div class="apikey-status" id="apikeyStatus" style="display:none;">
         <div class="apikey-status-dot" id="apikeyStatusDot"></div>
         <span id="apikeyStatusText"></span>
-        <button onclick="clearApiKey()" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;font-family:var(--mono)">CLEAR KEY</button>
       </div>
     </div>
   </div>
