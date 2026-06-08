@@ -256,6 +256,32 @@
   .narrative-title{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;}
   .narrative-model-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);}
   .narrative-cost-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,0.08);border:0.5px solid rgba(34,197,94,0.25);color:var(--green);}
+
+  /* LIVE-ONLY TOGGLE */
+  .toggle-wrap{display:flex;align-items:center;gap:8px;margin-left:4px;}
+  .toggle-label{font-family:var(--mono);font-size:9px;letter-spacing:0.06em;color:var(--text3);user-select:none;cursor:pointer;transition:color 0.2s;}
+  .toggle-label.active{color:var(--green);}
+  .toggle{position:relative;width:32px;height:18px;flex-shrink:0;cursor:pointer;}
+  .toggle input{opacity:0;width:0;height:0;position:absolute;}
+  .toggle-track{
+    position:absolute;inset:0;border-radius:18px;
+    background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);
+    transition:background 0.25s,border-color 0.25s;
+  }
+  .toggle input:checked ~ .toggle-track{
+    background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);
+  }
+  .toggle-thumb{
+    position:absolute;top:3px;left:3px;
+    width:12px;height:12px;border-radius:50%;
+    background:#64748b;transition:transform 0.25s,background 0.25s;
+  }
+  .toggle input:checked ~ .toggle-thumb{
+    transform:translateX(14px);background:var(--green);
+  }
+  /* Dim simulated cards when live-only mode is on */
+  .ncard.is-simulated.dimmed{opacity:0.28;filter:grayscale(0.6);}
+  .ncard.is-simulated.hidden-card{display:none;}
   .narrative-gen-btn{font-family:var(--mono);font-size:10px;letter-spacing:0.05em;padding:5px 14px;border-radius:20px;cursor:pointer;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:var(--purple);transition:all 0.15s;display:flex;align-items:center;gap:6px;}
   .narrative-gen-btn:hover:not(:disabled){background:rgba(167,139,250,0.2);}
   .narrative-gen-btn:disabled{opacity:0.45;cursor:not-allowed;}
@@ -542,6 +568,14 @@
         <button class="tip-btn" onclick="showTip('narrative',this)" title="Learn about this panel">?</button>
         <span class="narrative-model-tag">CLAUDE · LIVE ANALYSIS</span>
         <span class="narrative-cost-tag">~$0.01–0.02 per refresh</span>
+        <div class="toggle-wrap" title="When ON: analysis only covers panels with real live data. Simulated panels are hidden.">
+          <label class="toggle">
+            <input type="checkbox" id="liveOnlyToggle" onchange="onLiveOnlyToggle()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+          <span class="toggle-label" id="liveOnlyLabel" onclick="document.getElementById('liveOnlyToggle').click()">LIVE DATA ONLY</span>
+        </div>
       </div>
       <button class="narrative-gen-btn" id="narrativeBtn" onclick="generateNarrative()">
         <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE ANALYSIS
@@ -659,6 +693,41 @@ function initApiKey(){
 // Claude fetches real market data using its web_search tool, then returns
 // structured JSON + narrative in one API call. No CORS issues, no API keys.
 
+// Which panels are live vs simulated — single source of truth
+function panelDataStatus(){
+  return {
+    // LIVE: heatmap % and RS chart come from Claude web search / applyLiveData
+    heatmap:  SECTORS.some(s=>s.live),
+    macro:    MACRO_DATA.some(m=>m.live),
+    // SIMULATED: no free real-time source available for these
+    flows:    false,
+    breadth:  false,
+    options:  false,
+    rotation: false,
+    picks:    false,
+  };
+}
+
+function isLiveOnlyMode(){
+  const tog = document.getElementById('liveOnlyToggle');
+  return tog && tog.checked;
+}
+
+function onLiveOnlyToggle(){
+  const on = isLiveOnlyMode();
+  const lbl = document.getElementById('liveOnlyLabel');
+  lbl.classList.toggle('active', on);
+  // Apply visual dimming/hiding to rendered cards immediately if already generated
+  applyLiveOnlyStyling();
+}
+
+function applyLiveOnlyStyling(){
+  const on = isLiveOnlyMode();
+  document.querySelectorAll('.ncard.is-simulated').forEach(card=>{
+    card.classList.toggle('hidden-card', on);
+  });
+}
+
 function buildNarrativePrompt(){
   // Build a compact snapshot of dashboard state to send to Claude
   const top3 = [...SECTORS].sort((a,b)=>b.perf-a.perf).slice(0,3).map(s=>`${s.ticker} ${s.perf>=0?'+':''}${s.perf.toFixed(1)}%`).join(', ');
@@ -674,42 +743,69 @@ function buildNarrativePrompt(){
   const picks = TOP_PICKS.slice(0,5).map(p=>`${p.ticker}(${p.sector},score:${p.score},upside:${p.upside},thesis:${p.reason})`).join('; ');
   const cycle = document.getElementById('cycleLabel').textContent;
 
-  return `You are a market analyst writing a sector rotation briefing for a BEGINNER investor who is learning. The data below comes from a dashboard showing SIMULATED market data (not real). Make this clear once at the start of the macro card only, then write naturally.
+  const liveOnly = isLiveOnlyMode();
+  const status = panelDataStatus();
 
-DASHBOARD DATA:
-Cycle: ${cycle}
-Macro: ${macro}
-Heatmap top: ${top3} | bottom: ${bot3}
-Flows in: ${topFlow} | out: ${botFlow}
-RSI overbought: ${overbought} | oversold: ${oversold}
-Breadth strong: ${goodBreadth} | weak: ${weakBreadth}
-Rotations: ${rotTop}
-Top picks: ${picks}
+  // Build data sections — only include a section if it's live (or if liveOnly is off)
+  const sections = [];
+  const jsonFields = [];
 
-Return ONLY valid JSON (no markdown, no backticks). Use this exact structure:
-{
-  "macro":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["short plain-english sentence","short plain-english sentence","short plain-english sentence"]},
-  "heatmap":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
-  "flows":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
-  "breadth":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
-  "options":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
-  "rotation": {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]},
-  "picks": [
-    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"One plain-english sentence — what signal supports this pick and why a beginner should care."},
-    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."},
-    {"ticker":"XXX","name":"Full Company Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."}
-  ],
-  "caveat": "One honest sentence about the biggest risk or limitation of this analysis."
-}
+  sections.push(`Business cycle phase: ${cycle}`);
 
-WRITING RULES — strictly follow these:
-- Each "points" array must have EXACTLY 3 items.
-- Each point is ONE short sentence (max 20 words). Plain English. No jargon without explanation.
-- Write as if explaining to someone who just started investing. Avoid: "confluence", "headwinds", "tailwinds", "nuanced", "robust".
-- Use plain words: instead of "elevated VIX", say "the fear gauge is high, meaning investors are nervous".
-- The "signal" field summarises the overall tone of that card in one word.
-- "picks" must have EXACTLY 3 entries.
-- "caveat" is one sentence, max 25 words, honest about data being simulated.`;
+  // Heatmap — always live if applyLiveData ran
+  if(!liveOnly || status.heatmap){
+    sections.push(`Sector weekly performance — top: ${top3} | bottom: ${bot3}`);
+    jsonFields.push(`"heatmap":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+  }
+
+  // Macro — live if FRED/Claude search loaded it, otherwise simulated
+  if(!liveOnly || status.macro){
+    sections.push(`Macro indicators: ${macro}`);
+    jsonFields.push(`"macro":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+  }
+
+  // Simulated panels — only include if liveOnly is OFF
+  if(!liveOnly){
+    sections.push(`Fund flows — in: ${topFlow} | out: ${botFlow}`);
+    sections.push(`RSI overbought: ${overbought} | oversold: ${oversold}`);
+    sections.push(`Breadth strong: ${goodBreadth} | weak: ${weakBreadth}`);
+    sections.push(`Top rotation signals: ${rotTop}`);
+    jsonFields.push(`"flows":    {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+    jsonFields.push(`"breadth":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+    jsonFields.push(`"options":  {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+    jsonFields.push(`"rotation": {"signal":"BULLISH|NEUTRAL|BEARISH","points":["...","...","..."]}`);
+  }
+
+  // Picks — always include but qualify source
+  sections.push(`Stock picks (${liveOnly ? 'based on live data only' : 'simulated rankings'}): ${picks}`);
+  jsonFields.push(`"picks": [
+    {"ticker":"XXX","name":"Full Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"One plain-english sentence why this pick is supported by the data above."},
+    {"ticker":"XXX","name":"Full Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."},
+    {"ticker":"XXX","name":"Full Name","sector":"Sector","upside":"+X%","signal":"BULL|NEUT|BEAR","reason":"..."}
+  ]`);
+  jsonFields.push(`"caveat": "One honest sentence about confidence level and data limitations."`);
+
+  const dataBlock = sections.join('\n');
+  const jsonStructure = '{\n  ' + jsonFields.join(',\n  ') + '\n}';
+
+  const liveOnlyNote = liveOnly
+    ? 'You are writing about LIVE market data only. Do not mention or reference any simulated data. Only comment on what the live data actually shows.'
+    : 'Some data is live (heatmap, macro if loaded) and some is simulated (flows, RSI, breadth, rotation). Mention "simulated" once in the caveat only — do not repeat it throughout.';
+
+  return `You are a market analyst briefing a BEGINNER investor. ${liveOnlyNote}
+
+DATA:
+${dataBlock}
+
+Return ONLY valid JSON (no markdown, no backticks, no extra text). Structure:
+${jsonStructure}
+
+RULES:
+- Each "points" array: EXACTLY 3 items. One short sentence each (max 20 words).
+- Plain English only. No jargon without explanation in the same sentence.
+- "signal" = one word: BULLISH, NEUTRAL, or BEARISH.
+- "picks": EXACTLY 3 entries. Base them on the data sections provided above.
+- "caveat": one sentence, max 25 words.`;
 }
 
 // Keep buildLiveDataPrompt as alias (used in tryFetchLiveData which is now disabled)
@@ -1633,13 +1729,14 @@ function renderStructuredCards(d){
   };
   const bulletColor = s => s==='BULLISH'||s==='BULL' ? '#22c55e' : s==='BEARISH'||s==='BEAR' ? '#ef4444' : '#f59e0b';
 
+  const status = panelDataStatus();
   const panelMeta = [
-    {key:'macro',    icon:'🏛', title:'Macro Environment'},
-    {key:'heatmap',  icon:'🌡', title:'Sector Heatmap'},
-    {key:'flows',    icon:'💰', title:'Fund Flows'},
-    {key:'breadth',  icon:'📊', title:'Market Breadth & RSI'},
-    {key:'options',  icon:'🎯', title:'Options Sentiment'},
-    {key:'rotation', icon:'🔄', title:'Rotation Signals'},
+    {key:'macro',    icon:'🏛', title:'Macro Environment',   live: status.macro},
+    {key:'heatmap',  icon:'🌡', title:'Sector Heatmap',      live: status.heatmap},
+    {key:'flows',    icon:'💰', title:'Fund Flows',          live: false},
+    {key:'breadth',  icon:'📊', title:'Market Breadth & RSI',live: false},
+    {key:'options',  icon:'🎯', title:'Options Sentiment',   live: false},
+    {key:'rotation', icon:'🔄', title:'Rotation Signals',    live: false},
   ];
 
   function infoCard(meta){
@@ -1650,10 +1747,15 @@ function renderStructuredCards(d){
         <div class="ncard-bullet" style="background:${bulletColor(p.signal)}"></div>
         <div class="ncard-text">${pt}</div>
       </div>`).join('');
-    return `<div class="ncard">
+    const srcBadge = meta.live
+      ? `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(34,197,94,0.12);color:var(--green);border:0.5px solid rgba(34,197,94,0.3);margin-left:4px">LIVE</span>`
+      : `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);margin-left:4px">SIM</span>`;
+    const simClass = meta.live ? '' : 'is-simulated';
+    return `<div class="ncard ${simClass}">
       <div class="ncard-header">
         <span class="ncard-icon">${meta.icon}</span>
         <span class="ncard-title">${meta.title}</span>
+        ${srcBadge}
         ${signalBadge(p.signal||'NEUTRAL')}
       </div>
       <div class="ncard-body">${pts}</div>
@@ -1674,6 +1776,7 @@ function renderStructuredCards(d){
 
   const caveat = d.caveat ? `<div class="ncard-caveat">⚠ ${d.caveat}</div>` : '';
 
+  const liveOnlyActive = isLiveOnlyMode();
   body.innerHTML = `
     <div class="narrative-cards">
       <div class="narrative-row row-3">${row1}</div>
@@ -1681,12 +1784,14 @@ function renderStructuredCards(d){
       <div class="ncard accent-purple">
         <div class="ncard-header">
           <span class="ncard-icon">⭐</span>
-          <span class="ncard-title">Top Stock Picks — Based on All Signals Above</span>
+          <span class="ncard-title">Top Stock Picks — Based on ${liveOnlyActive ? 'Live Data Only' : 'All Signals'}</span>
         </div>
         <div class="ncard-picks">${picks}</div>
         ${caveat}
       </div>
     </div>`;
+  // Apply live-only visibility immediately after render
+  applyLiveOnlyStyling();
 }
 
 function renderCards(cards){
