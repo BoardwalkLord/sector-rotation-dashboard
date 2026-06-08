@@ -363,6 +363,14 @@
     </div>
     <div class="header-right">
       <div class="cycle-badge" id="cycleLabel">MID EXPANSION</div>
+      <button onclick="toggleSettingsPanel()" title="API Key Settings"
+        style="font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:20px;cursor:pointer;
+               background:rgba(255,255,255,0.05);border:0.5px solid var(--border2);color:var(--text2);
+               display:flex;align-items:center;gap:5px;transition:all 0.15s;"
+        onmouseover="this.style.borderColor='rgba(59,130,246,0.4)';this.style.color='var(--blue)'"
+        onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+        ⚙ DATA SOURCES
+      </button>
       <div class="timestamp" id="clockDisplay">—</div>
     </div>
   </header>
@@ -532,11 +540,7 @@
     <div class="apikey-content">
       <div class="apikey-title">Connect to Claude AI for Live Data &amp; Analysis</div>
       <div class="apikey-desc">
-        This dashboard uses the <strong>Claude API</strong> to fetch real market data (ETF prices, macro indicators) and write the AI narrative. 
-        You need a free Anthropic API key — get one in 60 seconds at 
-        <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 
-        (free tier includes $5 credit, no credit card required to sign up).<br><br>
-        <strong>Your key stays in your browser only</strong> (localStorage) — it is never sent anywhere except directly to api.anthropic.com.
+        Connect up to three free data sources below — each is optional and independent. All keys are saved in your browser only and sent solely to their own API servers. You can reopen this panel anytime via the <strong style="color:var(--text1);">⚙ DATA SOURCES</strong> button in the header.
       </div>
       <div class="apikey-row">
         <input class="apikey-input" id="apikeyInput" type="password"
@@ -662,9 +666,12 @@ function saveAllKeys(){
   if(av)   { avApiKey=av;          localStorage.setItem('avApiKey',av); }
   if(fred) { fredApiKey=fred;      localStorage.setItem('fredApiKey',fred); }
 
-  document.getElementById('apikeyPanel').classList.add('hidden');
-  const parts=[ant?'Anthropic ✓':'',av?'Alpha Vantage ✓':'',fred?'FRED ✓':''].filter(Boolean);
-  setKeyStatus('ok','Connected: '+parts.join(' · '));
+  // Hide panel only if Anthropic key is set (required for AI narrative)
+  if(ant || anthropicApiKey){
+    document.getElementById('apikeyPanel').classList.add('hidden');
+  }
+  const parts=[ant||anthropicApiKey?'Anthropic ✓':'',av||avApiKey?'Alpha Vantage ✓':'',fred||fredApiKey?'FRED ✓':''].filter(Boolean);
+  setKeyStatus('ok', parts.length ? 'Connected: '+parts.join(' · ') : 'No keys saved yet');
 
   fetchAllLiveData();
   if(ant) generateNarrative();
@@ -684,6 +691,15 @@ function clearAllKeys(){
   setKeyStatus('','');
 }
 
+function toggleSettingsPanel(){
+  const panel = document.getElementById('apikeyPanel');
+  panel.classList.toggle('hidden');
+  // Scroll to panel if opening it
+  if(!panel.classList.contains('hidden')){
+    panel.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
 function toggleKeyVisibility(inputId){
   const inp=document.getElementById(inputId||'apikeyInput');
   if(inp) inp.type=inp.type==='password'?'text':'password';
@@ -700,13 +716,20 @@ function setKeyStatus(type,msg){
 }
 
 function initApiKey(){
+  // Pre-fill whatever keys are already saved
+  const ai=document.getElementById('apikeyInput');   if(ai)  ai.value=anthropicApiKey;
+  const av=document.getElementById('avKeyInput');    if(av)  av.value=avApiKey;
+  const fr=document.getElementById('fredKeyInput');  if(fr)  fr.value=fredApiKey;
+
   if(anthropicApiKey||avApiKey||fredApiKey){
-    document.getElementById('apikeyPanel').classList.add('hidden');
-    const ai=document.getElementById('apikeyInput');   if(ai)  ai.value=anthropicApiKey;
-    const av=document.getElementById('avKeyInput');    if(av)  av.value=avApiKey;
-    const fr=document.getElementById('fredKeyInput');  if(fr)  fr.value=fredApiKey;
     const parts=[anthropicApiKey?'Anthropic ✓':'',avApiKey?'Alpha Vantage ✓':'',fredApiKey?'FRED ✓':''].filter(Boolean);
     setKeyStatus('ok','Connected: '+parts.join(' · '));
+  }
+
+  // Only auto-hide the panel if ALL three keys are saved
+  // (If any are missing, keep it open so user can fill them in)
+  if(anthropicApiKey && avApiKey && fredApiKey){
+    document.getElementById('apikeyPanel').classList.add('hidden');
   }
 }
 
