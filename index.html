@@ -379,15 +379,11 @@
         <span class="panel-title">Sector Performance &amp; ETF Heatmap</span>
         <button class="tip-btn" onclick="showTip('heatmap',this)" title="Learn about this panel">?</button>
       </div>
-      <span class="panel-badge badge-live" id="heatmapPeriod">&#9679; LIVE · YAHOO</span>
+      <span class="panel-badge badge-sim" id="heatmapPeriod">SIMULATED</span>
     </div>
-    <!-- DATA SOURCE STATUS ROW -->
     <div class="data-status-row">
-      <span class="ds-dot" id="heatDot" style="background:#475569"></span>
-      <span class="ds-label" id="heatStatusText">Heatmap, Macro &amp; RS: fetching via Claude AI search…</span>
-      &nbsp;·&nbsp;
       <span class="ds-dot ds-sim"></span>
-      <span class="ds-label">Fund flows, RSI, breadth, put/call, rotation signals: simulated</span>
+      <span class="ds-label" id="heatStatusText">All panel data is currently <strong>simulated</strong> — the AI Narrative uses Claude's real knowledge to interpret it</span>
     </div>
     <div class="sector-grid" id="sectorGrid"></div>
   </div>
@@ -463,7 +459,7 @@
             <span class="panel-title">Relative Strength vs S&amp;P 500</span>
             <button class="tip-btn" onclick="showTip('rs',this)" title="Learn about this panel">?</button>
           </div>
-          <span class="panel-badge badge-live">&#9679; LIVE · YAHOO</span>
+          <span class="panel-badge badge-sim">SIMULATED</span>
         </div>
         <div class="chart-container">
           <div class="chart-tabs" id="rsChartTabs"></div>
@@ -568,13 +564,13 @@
         <button class="tip-btn" onclick="showTip('narrative',this)" title="Learn about this panel">?</button>
         <span class="narrative-model-tag">CLAUDE · LIVE ANALYSIS</span>
         <span class="narrative-cost-tag">~$0.01–0.02 per refresh</span>
-        <div class="toggle-wrap" title="When ON: analysis only covers panels with real live data. Simulated panels are hidden.">
+        <div class="toggle-wrap" title="When ON: narrative explains what each panel WOULD show with real data, rather than interpreting simulated numbers.">
           <label class="toggle">
             <input type="checkbox" id="liveOnlyToggle" onchange="onLiveOnlyToggle()">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
-          <span class="toggle-label" id="liveOnlyLabel" onclick="document.getElementById('liveOnlyToggle').click()">LIVE DATA ONLY</span>
+          <span class="toggle-label" id="liveOnlyLabel" onclick="document.getElementById('liveOnlyToggle').click()">EXPLAIN REAL DATA MODE</span>
         </div>
       </div>
       <button class="narrative-gen-btn" id="narrativeBtn" onclick="generateNarrative()">
@@ -639,57 +635,176 @@ let MACRO_DATA=[
 
 // ── API KEY MANAGEMENT ───────────────────────────────────────────────────────
 let anthropicApiKey = localStorage.getItem('anthropicApiKey') || '';
+let avApiKey        = localStorage.getItem('avApiKey')        || '';
+let fredApiKey      = localStorage.getItem('fredApiKey')      || '';
 
-function saveApiKey(){
-  const val = document.getElementById('apikeyInput').value.trim();
-  // Accept any key starting with 'sk-' (Anthropic format, old or new)
-  if(!val || !val.startsWith('sk-')){
-    document.getElementById('apikeyValidationMsg').textContent =
-      '⚠ Key must start with  sk-  — check you copied the full key from console.anthropic.com';
-    document.getElementById('apikeyValidationMsg').style.display = 'block';
-    return;
-  }
-  document.getElementById('apikeyValidationMsg').style.display = 'none';
-  anthropicApiKey = val;
-  localStorage.setItem('anthropicApiKey', val);
-  document.getElementById('apikeyPanel').classList.add('hidden');
-  setKeyStatus('ok','Connected · key saved in browser storage');
-  generateNarrative();
+function clearKeyMsg(){
+  const el = document.getElementById('apikeyValidationMsg');
+  if(el) el.style.display='none';
 }
 
-function clearApiKey(){
-  anthropicApiKey = '';
-  localStorage.removeItem('anthropicApiKey');
-  document.getElementById('apikeyInput').value = '';
-  document.getElementById('apikeyValidationMsg').style.display = 'none';
+function saveAllKeys(){
+  const antEl  = document.getElementById('apikeyInput');
+  const avEl   = document.getElementById('avKeyInput');
+  const fredEl = document.getElementById('fredKeyInput');
+  const ant  = antEl  ? antEl.value.trim()  : '';
+  const av   = avEl   ? avEl.value.trim()   : '';
+  const fred = fredEl ? fredEl.value.trim() : '';
+  const msgEl = document.getElementById('apikeyValidationMsg');
+
+  if(ant && !ant.startsWith('sk-')){
+    if(msgEl){ msgEl.textContent='⚠ Anthropic key must start with sk-'; msgEl.style.display='block'; }
+    return;
+  }
+  if(msgEl) msgEl.style.display='none';
+
+  if(ant)  { anthropicApiKey=ant;  localStorage.setItem('anthropicApiKey',ant); }
+  if(av)   { avApiKey=av;          localStorage.setItem('avApiKey',av); }
+  if(fred) { fredApiKey=fred;      localStorage.setItem('fredApiKey',fred); }
+
+  document.getElementById('apikeyPanel').classList.add('hidden');
+  const parts=[ant?'Anthropic ✓':'',av?'Alpha Vantage ✓':'',fred?'FRED ✓':''].filter(Boolean);
+  setKeyStatus('ok','Connected: '+parts.join(' · '));
+
+  fetchAllLiveData();
+  if(ant) generateNarrative();
+}
+
+// Legacy aliases
+function saveApiKey(){ saveAllKeys(); }
+function clearApiKey(){ clearAllKeys(); }
+
+function clearAllKeys(){
+  ['anthropicApiKey','avApiKey','fredApiKey'].forEach(k=>localStorage.removeItem(k));
+  anthropicApiKey=''; avApiKey=''; fredApiKey='';
+  ['apikeyInput','avKeyInput','fredKeyInput'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
   document.getElementById('apikeyPanel').classList.remove('hidden');
   setKeyStatus('','');
 }
 
-function toggleKeyVisibility(){
-  const input = document.getElementById('apikeyInput');
-  input.type = input.type === 'password' ? 'text' : 'password';
+function toggleKeyVisibility(inputId){
+  const inp=document.getElementById(inputId||'apikeyInput');
+  if(inp) inp.type=inp.type==='password'?'text':'password';
 }
 
-function setKeyStatus(type, msg){
-  const row = document.getElementById('apikeyStatus');
-  const dot = document.getElementById('apikeyStatusDot');
-  const txt = document.getElementById('apikeyStatusText');
-  if(!type){ row.style.display='none'; return; }
-  row.style.display='flex';
-  txt.textContent = msg;
-  dot.style.background = type==='ok' ? '#22c55e' : type==='error' ? '#ef4444' : '#f59e0b';
+function setKeyStatus(type,msg){
+  const row=document.getElementById('apikeyStatus');
+  const dot=document.getElementById('apikeyStatusDot');
+  const txt=document.getElementById('apikeyStatusText');
+  if(!type){if(row)row.style.display='none';return;}
+  if(row)row.style.display='flex';
+  if(txt)txt.textContent=msg;
+  if(dot)dot.style.background=type==='ok'?'#22c55e':type==='error'?'#ef4444':'#f59e0b';
 }
 
 function initApiKey(){
-  if(anthropicApiKey){
+  if(anthropicApiKey||avApiKey||fredApiKey){
     document.getElementById('apikeyPanel').classList.add('hidden');
-    document.getElementById('apikeyInput').value = anthropicApiKey;
-    setKeyStatus('ok','Connected · key loaded from browser storage');
+    const ai=document.getElementById('apikeyInput');   if(ai)  ai.value=anthropicApiKey;
+    const av=document.getElementById('avKeyInput');    if(av)  av.value=avApiKey;
+    const fr=document.getElementById('fredKeyInput');  if(fr)  fr.value=fredApiKey;
+    const parts=[anthropicApiKey?'Anthropic ✓':'',avApiKey?'Alpha Vantage ✓':'',fredApiKey?'FRED ✓':''].filter(Boolean);
+    setKeyStatus('ok','Connected: '+parts.join(' · '));
   }
 }
 
-// ── LIVE DATA VIA CLAUDE WEB SEARCH ──────────────────────────────────────────
+// ── LIVE DATA FETCHING ────────────────────────────────────────────────────────
+
+async function fetchAllLiveData(){
+  if(!avApiKey && !fredApiKey) return;
+  const results = await Promise.allSettled([
+    avApiKey   ? fetchAlphaVantageSectors() : Promise.resolve(),
+    fredApiKey ? fetchFredMacro()           : Promise.resolve(),
+  ]);
+  buildSectorGrid(); buildMacro(); buildGauges();
+  updateDataStatusRow();
+}
+
+function updateDataStatusRow(){
+  const el = document.getElementById('heatStatusText');
+  if(!el) return;
+  const heat  = SECTORS.some(s=>s.live) ? '<strong style="color:var(--green)">LIVE via Alpha Vantage</strong>' : '<span style="color:#64748b">SIMULATED</span>';
+  const macro = MACRO_DATA.some(m=>m.live) ? '<strong style="color:var(--green)">LIVE via FRED</strong>' : '<span style="color:#64748b">SIMULATED</span>';
+  el.innerHTML = 'Heatmap: '+heat+' &nbsp;·&nbsp; Macro: '+macro+' &nbsp;·&nbsp; <span style="color:#64748b">All other panels: SIMULATED</span>';
+}
+
+async function fetchAlphaVantageSectors(){
+  try {
+    const url=`https://www.alphavantage.co/query?function=SECTOR&apikey=${avApiKey}`;
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+
+    if(d['Note']||d['Information']){
+      throw new Error('Rate limit reached — Alpha Vantage free tier allows 25 calls/day');
+    }
+
+    const avMap={
+      'Information Technology':'XLK','Energy':'XLE','Financials':'XLF',
+      'Health Care':'XLV','Industrials':'XLI','Consumer Staples':'XLP',
+      'Consumer Discretionary':'XLY','Utilities':'XLU','Real Estate':'XLRE',
+      'Materials':'XLB','Communication Services':'XLC'
+    };
+
+    // Use 5-day (weekly) performance
+    const weekly=d['Rank C: 5 Day Performance']||d['Rank B: 1 Day Performance']||{};
+    let liveCount=0;
+    Object.entries(weekly).forEach(([name,pctStr])=>{
+      const ticker=avMap[name]; if(!ticker) return;
+      const sec=SECTORS.find(s=>s.ticker===ticker); if(!sec) return;
+      const pct=parseFloat(pctStr);
+      if(!isNaN(pct)){ sec.perf=pct; sec.live=true; liveCount++; }
+    });
+
+    if(liveCount>0){
+      const badge=document.getElementById('heatmapPeriod');
+      if(badge){badge.innerHTML='&#9679; LIVE · AV';badge.className='panel-badge badge-live';}
+    }
+    console.log('Alpha Vantage: '+liveCount+' sectors loaded');
+  } catch(e){
+    console.warn('Alpha Vantage failed:',e.message);
+    setKeyStatus('error','Alpha Vantage: '+e.message);
+  }
+}
+
+async function fetchFredMacro(){
+  const series=[
+    {id:'FEDFUNDS',   label:'Fed Funds Rate', fmt:v=>v.toFixed(2)+'%',         sig:v=>v>4?'bear':v>2?'neut':'bull', icon:'fa-landmark'},
+    {id:'T10Y2Y',     label:'10Y-2Y Spread',  fmt:v=>(v>=0?'+':'')+v.toFixed(2)+'%', sig:v=>v>0.2?'bull':v>-0.2?'neut':'bear', icon:'fa-chart-line'},
+    {id:'VIXCLS',     label:'VIX',            fmt:v=>v.toFixed(1),              sig:v=>v<20?'bull':v<30?'neut':'bear', icon:'fa-wave-square'},
+    {id:'CPIAUCSL',   label:'CPI YoY',        fmt:v=>v.toFixed(1)+' (idx)',     sig:_=>'neut', icon:'fa-coins'},
+    {id:'DTWEXBGS',   label:'DXY (USD)',       fmt:v=>v.toFixed(1),              sig:v=>v>105?'bear':v>100?'neut':'bull', icon:'fa-dollar-sign'},
+    {id:'DCOILWTICO', label:'WTI Crude',       fmt:v=>'$'+v.toFixed(2),         sig:v=>v>90?'bear':v>70?'neut':'bull', icon:'fa-oil-well'},
+  ];
+
+  let liveCount=0;
+  await Promise.allSettled(series.map(async s=>{
+    try {
+      const url=`https://api.stlouisfed.org/fred/series/observations?series_id=${s.id}&api_key=${fredApiKey}&file_type=json&limit=5&sort_order=desc`;
+      const r=await fetch(url);
+      if(!r.ok) throw new Error(s.id+' HTTP '+r.status);
+      const d=await r.json();
+      if(d.error_message) throw new Error(d.error_message);
+      const obs=(d.observations||[]).find(o=>o.value&&o.value!=='.');
+      if(!obs) return;
+      const val=parseFloat(obs.value);
+      if(isNaN(val)) return;
+
+      // Find matching entry in MACRO_DATA by icon (most reliable match key)
+      const entry=MACRO_DATA.find(m=>m.icon===s.icon);
+      if(entry){entry.value=s.fmt(val);entry.signal=s.sig(val);entry.live=true;liveCount++;}
+    } catch(e){console.warn('FRED',s.id,e.message);}
+  }));
+
+  if(liveCount>0){
+    const badge=document.getElementById('macroBadge');
+    if(badge){badge.innerHTML='&#9679; LIVE · FRED';badge.className='panel-badge badge-live';}
+    console.log('FRED: '+liveCount+' macro series loaded');
+  }
+}
+
 // Claude fetches real market data using its web_search tool, then returns
 // structured JSON + narrative in one API call. No CORS issues, no API keys.
 
@@ -752,42 +867,35 @@ function buildNarrativePrompt(){
 
   // Which panels have real data vs simulated
   // Heatmap % is real (from SECTORS.perf generated by dashboard)
-  // Macro values shown on screen are real placeholders (hardcoded realistic values)
-  // Everything else is randomly simulated
-  const panelSources = {
-    heatmap:  'REAL — weekly ETF price performance data',
-    macro:    'REAL — current macroeconomic indicator values',
-    flows:    'SIMULATED — randomly generated for demo purposes',
-    breadth:  'SIMULATED — randomly generated for demo purposes',
-    options:  'SIMULATED — randomly generated for demo purposes',
-    rotation: 'SIMULATED — randomly generated for demo purposes',
-  };
+  // ALL data on this dashboard is simulated / hardcoded — nothing is fetched from a live source.
+  // The narrative panel is the only thing that uses real intelligence (Claude's knowledge),
+  // but the numbers it analyses are still simulated dashboard values.
 
   const liveOnlyInstruction = liveOnly
-    ? 'IMPORTANT: The user has selected LIVE DATA ONLY mode. You MUST write content for ALL SIX panels regardless. For panels marked SIMULATED, write a brief honest note that this data is not available in live mode and explain what this panel would show with real data. Do NOT skip any panel.'
-    : 'Write analysis for all six panels. Note once in the caveat that some panels use simulated data.';
+    ? 'IMPORTANT: The user has selected LIVE DATA ONLY mode. Since all dashboard data is currently simulated, write a clear honest note in each panel explaining what REAL data would look like for that panel and what a real reading would mean for investors. Do NOT pretend the simulated numbers are real. Do NOT skip any panel.'
+    : 'Write analysis for all six panels, treating the data as illustrative simulated values. Note once in the caveat that all data is simulated.';
 
   return `You are a market analyst briefing a BEGINNER investor.
 ${liveOnlyInstruction}
 
-DASHBOARD DATA:
+DASHBOARD DATA (ALL SIMULATED — for educational illustration only):
 Business cycle: ${cycle}
-Macro indicators (REAL): ${macro}
-Sector heatmap top performers (REAL): ${top3}
-Sector heatmap bottom performers (REAL): ${bot3}
-Fund flows in (SIMULATED): ${topFlow}
-Fund flows out (SIMULATED): ${botFlow}
-RSI overbought (SIMULATED): ${overbought}
-RSI oversold (SIMULATED): ${oversold}
-Breadth strong (SIMULATED): ${goodBreadth}
-Breadth weak (SIMULATED): ${weakBreadth}
-Rotation signals (SIMULATED): ${rotTop}
-Top picks (SIMULATED): ${picks}
+Macro indicators: ${macro}
+Sector heatmap top performers: ${top3}
+Sector heatmap bottom performers: ${bot3}
+Fund flows in: ${topFlow}
+Fund flows out: ${botFlow}
+RSI overbought: ${overbought}
+RSI oversold: ${oversold}
+Breadth strong: ${goodBreadth}
+Breadth weak: ${weakBreadth}
+Rotation signals: ${rotTop}
+Top picks: ${picks}
 
 Return ONLY valid JSON. No markdown, no backticks, no extra text. Use EXACTLY this structure:
 {
-  "macro":    {"isLive":true,  "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
-  "heatmap":  {"isLive":true,  "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
+  "macro":    {"isLive":false, "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
+  "heatmap":  {"isLive":false, "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
   "flows":    {"isLive":false, "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
   "breadth":  {"isLive":false, "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
   "options":  {"isLive":false, "signal":"BULLISH|NEUTRAL|BEARISH", "points":["sentence 1","sentence 2","sentence 3"]},
@@ -797,16 +905,16 @@ Return ONLY valid JSON. No markdown, no backticks, no extra text. Use EXACTLY th
     {"ticker":"XXX","name":"Full Company Name","sector":"Sector Name","upside":"+X.X%","signal":"BULL|NEUT|BEAR","reason":"One plain-english sentence max 20 words."},
     {"ticker":"XXX","name":"Full Company Name","sector":"Sector Name","upside":"+X.X%","signal":"BULL|NEUT|BEAR","reason":"One plain-english sentence max 20 words."}
   ],
-  "caveat": "One honest sentence, max 25 words."
+  "caveat": "One honest sentence noting all data is simulated, max 25 words."
 }
 
 WRITING RULES:
 - Every panel MUST have exactly 3 points. Never skip a panel.
 - Each point: ONE sentence, max 20 words, plain English, no jargon without explanation.
-- For SIMULATED panels in live-only mode: point 1 says data is not available live, points 2-3 explain what this panel would show with real data and why it matters.
-- signal field: one word — BULLISH, NEUTRAL, or BEARISH.
-- picks: exactly 3 entries, base them on the heatmap and macro data above.
-- caveat: honest about data sources, max 25 words.`;
+- In live-only mode: explain what real data would look like and why it matters for investors.
+- signal field: one word — BULLISH, NEUTRAL, or BEARISH based on the simulated values shown.
+- picks: exactly 3 entries.
+- caveat: honest that all data is simulated, max 25 words.`;
 }
 
 function buildLiveDataPrompt(){ return buildNarrativePrompt(); }
@@ -1842,8 +1950,12 @@ function init(){
   buildRsChart();
   updateClock();
   setInterval(updateClock,1000);
-  // Only auto-generate narrative if we already have an API key
-  if(anthropicApiKey) generateNarrative();
+  // Fetch live data from connected sources, then generate narrative
+  if(avApiKey||fredApiKey){
+    fetchAllLiveData().then(()=>{ if(anthropicApiKey) generateNarrative(); });
+  } else if(anthropicApiKey){
+    generateNarrative();
+  }
 }
 window.onload=init;
 </script>
