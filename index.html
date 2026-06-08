@@ -694,12 +694,17 @@ function initApiKey(){
 // structured JSON + narrative in one API call. No CORS issues, no API keys.
 
 // Which panels are live vs simulated — single source of truth
+// Persistent flags — set to true when real data arrives, never reset to false
+const liveFlags = { heatmap: false, macro: false };
+
 function panelDataStatus(){
+  // Re-check live state from actual data arrays each time
+  // (covers case where applyLiveData ran before this call)
+  if(SECTORS.some(s=>s.live))  liveFlags.heatmap = true;
+  if(MACRO_DATA.some(m=>m.live)) liveFlags.macro = true;
   return {
-    // LIVE: heatmap % and RS chart come from Claude web search / applyLiveData
-    heatmap:  SECTORS.some(s=>s.live),
-    macro:    MACRO_DATA.some(m=>m.live),
-    // SIMULATED: no free real-time source available for these
+    heatmap:  liveFlags.heatmap,
+    macro:    liveFlags.macro,
     flows:    false,
     breadth:  false,
     options:  false,
@@ -859,6 +864,10 @@ function applyLiveData(parsed){
       rsDataCache[ticker] = rs[ticker].slice(-12);
     }
   });
+
+  // ── Update persistent live flags immediately
+  if(SECTORS.some(s=>s.live))    liveFlags.heatmap = true;
+  if(MACRO_DATA.some(m=>m.live)) liveFlags.macro   = true;
 
   // ── Ticker bar
   const allTickerSyms = ['XLK','XLE','XLF','XLV','XLI','XLP','XLY','XLU','XLRE','XLB','XLC','SPY','QQQ'];
@@ -1742,6 +1751,8 @@ function renderStructuredCards(d){
   function infoCard(meta){
     const p = d[meta.key];
     if(!p||!p.points) return '';
+    // In live-only mode, skip simulated cards entirely (don't render empty placeholders)
+    if(liveOnlyActive && !meta.live) return '';
     const pts = p.points.map(pt=>`
       <div class="ncard-point">
         <div class="ncard-bullet" style="background:${bulletColor(p.signal)}"></div>
@@ -1763,8 +1774,22 @@ function renderStructuredCards(d){
   }
 
   // Rows: 3 + 3 info cards, then picks row, then caveat
-  const row1 = panelMeta.slice(0,3).map(infoCard).join('');
-  const row2 = panelMeta.slice(3,6).map(infoCard).join('');
+  // Build all 6 info cards; filter empty ones for live-only layout
+  const allInfoCards = panelMeta.map(infoCard).filter(h => h !== '');
+  const liveInfoCards = allInfoCards; // already filtered by infoCard returning '' when card key missing
+
+  // Split into rows of up to 3 — reflow automatically based on count
+  function chunkCards(arr, size){
+    const rows = [];
+    for(let i=0;i<arr.length;i+=size) rows.push(arr.slice(i,i+size));
+    return rows;
+  }
+  const cardRows = chunkCards(liveInfoCards, 3);
+  const rowsHtml = cardRows.map(row => {
+    const cols = row.length;
+    const cls = cols===3?'row-3':cols===2?'row-2':'row-1';
+    return `<div class="narrative-row ${cls}">${row.join('')}</div>`;
+  }).join('');
 
   // Picks cards
   const picks = (d.picks||[]).slice(0,3).map(p=>`
@@ -1790,12 +1815,23 @@ function renderStructuredCards(d){
         ${caveat}
       </div>`;
 
+  // Show a "no live data yet" message if toggle is on but nothing is live
+  const hasLiveCards = liveInfoCards.length > 0;
+  const noLiveMsg = liveOnlyActive && !hasLiveCards
+    ? `<div style="padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.8;">
+        No live data loaded yet.<br>
+        <span style="color:var(--text2)">Click <strong>GENERATE ANALYSIS</strong> — Claude will fetch live market data and write the analysis.</span>
+      </div>` : '';
+
+  const picksNote = liveOnlyActive
+    ? `<div style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);text-align:center;">⭐ Stock picks hidden — derived from simulated rankings, not live data.</div>`
+    : picksCard;
+
   body.innerHTML = `
     <div class="narrative-cards">
-      <div class="narrative-row row-3">${row1}</div>
-      <div class="narrative-row row-3">${row2}</div>
-      ${picksCard}
-      ${liveOnlyActive ? `<div style="padding:12px 16px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);text-align:center;">⭐ Stock picks are hidden in Live Data Only mode — picks are derived from simulated rankings, not live data.</div>` : ''}
+      ${noLiveMsg}
+      ${rowsHtml}
+      ${picksNote}
     </div>`;
   // Apply live-only visibility immediately after render
   applyLiveOnlyStyling();
