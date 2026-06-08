@@ -1732,109 +1732,91 @@ function renderNarrative(raw){
 
 function renderStructuredCards(d){
   const body = document.getElementById('narrativeBody');
+  const liveOnly = isLiveOnlyMode();
+
   const signalBadge = s => {
-    const cl = s==='BULLISH'||s==='BULL' ? 'badge-bull' : s==='BEARISH'||s==='BEAR' ? 'badge-bear' : 'badge-neut';
-    return `<span class="ncard-badge ${cl}">${s}</span>`;
+    const cl = s==='BULLISH'||s==='BULL'?'badge-bull':s==='BEARISH'||s==='BEAR'?'badge-bear':'badge-neut';
+    return `<span class="ncard-badge ${cl}">${s||'NEUTRAL'}</span>`;
   };
-  const bulletColor = s => s==='BULLISH'||s==='BULL' ? '#22c55e' : s==='BEARISH'||s==='BEAR' ? '#ef4444' : '#f59e0b';
+  const bulletColor = s => s==='BULLISH'||s==='BULL'?'#22c55e':s==='BEARISH'||s==='BEAR'?'#ef4444':'#f59e0b';
 
   const status = panelDataStatus();
-  const panelMeta = [
-    {key:'macro',    icon:'🏛', title:'Macro Environment',   live: status.macro},
-    {key:'heatmap',  icon:'🌡', title:'Sector Heatmap',      live: status.heatmap},
-    {key:'flows',    icon:'💰', title:'Fund Flows',          live: false},
-    {key:'breadth',  icon:'📊', title:'Market Breadth & RSI',live: false},
-    {key:'options',  icon:'🎯', title:'Options Sentiment',   live: false},
-    {key:'rotation', icon:'🔄', title:'Rotation Signals',    live: false},
+  const ALL_PANELS = [
+    {key:'macro',    icon:'🏛', title:'Macro Environment',  isLive: status.macro},
+    {key:'heatmap',  icon:'🌡', title:'Sector Heatmap',     isLive: status.heatmap},
+    {key:'flows',    icon:'💰', title:'Fund Flows',         isLive: false},
+    {key:'breadth',  icon:'📊', title:'Breadth & RSI',      isLive: false},
+    {key:'options',  icon:'🎯', title:'Options Sentiment',  isLive: false},
+    {key:'rotation', icon:'🔄', title:'Rotation Signals',   isLive: false},
   ];
 
-  function infoCard(meta){
+  // Only show panels that pass the mode filter AND have content from Claude
+  const panelsToShow = ALL_PANELS.filter(p => {
+    if(liveOnly && !p.isLive) return false;
+    return d[p.key] && Array.isArray(d[p.key].points) && d[p.key].points.length > 0;
+  });
+
+  function buildCard(meta){
     const p = d[meta.key];
-    if(!p||!p.points) return '';
-    // In live-only mode, skip simulated cards entirely (don't render empty placeholders)
-    if(liveOnlyActive && !meta.live) return '';
-    const pts = p.points.map(pt=>`
+    const srcBadge = meta.isLive
+      ? `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(34,197,94,0.12);color:var(--green);border:0.5px solid rgba(34,197,94,0.3);">LIVE</span>`
+      : `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);">SIM</span>`;
+    const pts = (p.points||[]).map(pt => `
       <div class="ncard-point">
         <div class="ncard-bullet" style="background:${bulletColor(p.signal)}"></div>
         <div class="ncard-text">${pt}</div>
       </div>`).join('');
-    const srcBadge = meta.live
-      ? `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(34,197,94,0.12);color:var(--green);border:0.5px solid rgba(34,197,94,0.3);margin-left:4px">LIVE</span>`
-      : `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);margin-left:4px">SIM</span>`;
-    const simClass = meta.live ? '' : 'is-simulated';
-    return `<div class="ncard ${simClass}">
+    return `<div class="ncard ${meta.isLive?'':'is-simulated'}">
       <div class="ncard-header">
         <span class="ncard-icon">${meta.icon}</span>
         <span class="ncard-title">${meta.title}</span>
         ${srcBadge}
-        ${signalBadge(p.signal||'NEUTRAL')}
+        ${signalBadge(p.signal)}
       </div>
       <div class="ncard-body">${pts}</div>
     </div>`;
   }
 
-  // Rows: 3 + 3 info cards, then picks row, then caveat
-  // Build all 6 info cards; filter empty ones for live-only layout
-  const allInfoCards = panelMeta.map(infoCard).filter(h => h !== '');
-  const liveInfoCards = allInfoCards; // already filtered by infoCard returning '' when card key missing
-
-  // Split into rows of up to 3 — reflow automatically based on count
-  function chunkCards(arr, size){
-    const rows = [];
-    for(let i=0;i<arr.length;i+=size) rows.push(arr.slice(i,i+size));
-    return rows;
+  // Rows of up to 3, reflow for smaller counts
+  const cardHtmlList = panelsToShow.map(buildCard);
+  const rows = [];
+  for(let i=0; i<cardHtmlList.length; i+=3){
+    const chunk = cardHtmlList.slice(i, i+3);
+    const cls = chunk.length===3?'row-3':chunk.length===2?'row-2':'row-1';
+    rows.push(`<div class="narrative-row ${cls}">${chunk.join('')}</div>`);
   }
-  const cardRows = chunkCards(liveInfoCards, 3);
-  const rowsHtml = cardRows.map(row => {
-    const cols = row.length;
-    const cls = cols===3?'row-3':cols===2?'row-2':'row-1';
-    return `<div class="narrative-row ${cls}">${row.join('')}</div>`;
-  }).join('');
 
-  // Picks cards
-  const picks = (d.picks||[]).slice(0,3).map(p=>`
+  // Picks card: hidden in live-only mode (picks are simulated)
+  const picksHtml = (d.picks||[]).slice(0,3).map(p => `
     <div class="ncard-pick">
-      <div class="ncard-pick-ticker">${p.ticker} <span style="font-size:11px;font-weight:400;color:var(--text2)">${p.name||''}</span></div>
+      <div class="ncard-pick-ticker">${p.ticker||''} <span style="font-size:11px;font-weight:400;color:var(--text2)">${p.name||''}</span></div>
       <div class="ncard-pick-reason">${p.reason||''}</div>
       <div class="ncard-pick-upside">${p.upside||''} · ${p.sector||''}</div>
     </div>`).join('');
+  const caveatHtml = d.caveat ? `<div class="ncard-caveat">⚠ ${d.caveat}</div>` : '';
 
-  const caveat = d.caveat ? `<div class="ncard-caveat">⚠ ${d.caveat}</div>` : '';
+  const picksCard = liveOnly
+    ? `<div style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);text-align:center;">
+         ⭐ Stock picks hidden — they use simulated rankings, not live data.
+       </div>`
+    : `<div class="ncard accent-purple is-simulated">
+         <div class="ncard-header">
+           <span class="ncard-icon">⭐</span>
+           <span class="ncard-title">Top Stock Picks</span>
+           <span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);">SIM</span>
+         </div>
+         <div class="ncard-picks">${picksHtml}</div>
+         ${caveatHtml}
+       </div>`;
 
-  const liveOnlyActive = isLiveOnlyMode();
+  // No live data yet
+  const noDataMsg = liveOnly && panelsToShow.length === 0
+    ? `<div style="padding:28px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:2;">
+         No live panel data available yet.<br>
+         <span style="color:var(--text2);">Click <strong style="color:var(--text1);">REGENERATE</strong> to fetch real market data.</span>
+       </div>` : '';
 
-  // Picks card: hide entirely in live-only mode (picks are simulated rankings)
-  const picksCard = liveOnlyActive ? '' : `
-      <div class="ncard accent-purple is-simulated">
-        <div class="ncard-header">
-          <span class="ncard-icon">⭐</span>
-          <span class="ncard-title">Top Stock Picks</span>
-          <span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);margin-left:4px">SIM</span>
-        </div>
-        <div class="ncard-picks">${picks}</div>
-        ${caveat}
-      </div>`;
-
-  // Show a "no live data yet" message if toggle is on but nothing is live
-  const hasLiveCards = liveInfoCards.length > 0;
-  const noLiveMsg = liveOnlyActive && !hasLiveCards
-    ? `<div style="padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.8;">
-        No live data loaded yet.<br>
-        <span style="color:var(--text2)">Click <strong>GENERATE ANALYSIS</strong> — Claude will fetch live market data and write the analysis.</span>
-      </div>` : '';
-
-  const picksNote = liveOnlyActive
-    ? `<div style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);text-align:center;">⭐ Stock picks hidden — derived from simulated rankings, not live data.</div>`
-    : picksCard;
-
-  body.innerHTML = `
-    <div class="narrative-cards">
-      ${noLiveMsg}
-      ${rowsHtml}
-      ${picksNote}
-    </div>`;
-  // Apply live-only visibility immediately after render
-  applyLiveOnlyStyling();
+  body.innerHTML = `<div class="narrative-cards">${noDataMsg}${rows.join('')}${picksCard}</div>`;
 }
 
 function renderCards(cards){
