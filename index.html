@@ -1777,18 +1777,25 @@ function renderStructuredCards(d){
   const caveat = d.caveat ? `<div class="ncard-caveat">⚠ ${d.caveat}</div>` : '';
 
   const liveOnlyActive = isLiveOnlyMode();
+
+  // Picks card: hide entirely in live-only mode (picks are simulated rankings)
+  const picksCard = liveOnlyActive ? '' : `
+      <div class="ncard accent-purple is-simulated">
+        <div class="ncard-header">
+          <span class="ncard-icon">⭐</span>
+          <span class="ncard-title">Top Stock Picks</span>
+          <span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.15);color:#64748b;border:0.5px solid rgba(100,116,139,0.3);margin-left:4px">SIM</span>
+        </div>
+        <div class="ncard-picks">${picks}</div>
+        ${caveat}
+      </div>`;
+
   body.innerHTML = `
     <div class="narrative-cards">
       <div class="narrative-row row-3">${row1}</div>
       <div class="narrative-row row-3">${row2}</div>
-      <div class="ncard accent-purple">
-        <div class="ncard-header">
-          <span class="ncard-icon">⭐</span>
-          <span class="ncard-title">Top Stock Picks — Based on ${liveOnlyActive ? 'Live Data Only' : 'All Signals'}</span>
-        </div>
-        <div class="ncard-picks">${picks}</div>
-        ${caveat}
-      </div>
+      ${picksCard}
+      ${liveOnlyActive ? `<div style="padding:12px 16px;font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);text-align:center;">⭐ Stock picks are hidden in Live Data Only mode — picks are derived from simulated rankings, not live data.</div>` : ''}
     </div>`;
   // Apply live-only visibility immediately after render
   applyLiveOnlyStyling();
